@@ -9,7 +9,25 @@ from app.config import get_settings
 
 settings = get_settings()
 
-_e_sqlite = settings.database_url.startswith("sqlite")
+
+def _normalizar_url_postgres(url: str) -> str:
+    """Ajusta a URL do banco para o driver `psycopg` v3 (que instalamos).
+
+    Provedores gerenciados (Render, Heroku, Neon) entregam a URL como
+    `postgres://...` ou `postgresql://...`. Sem qualificador de driver, o
+    SQLAlchemy tenta importar o `psycopg2` (v2) e quebra com
+    `ModuleNotFoundError: No module named 'psycopg2'`. Convertemos para
+    `postgresql+psycopg://...` para forçar o driver v3.
+    """
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://") :]
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://") :]
+    return url
+
+
+_url_banco = _normalizar_url_postgres(settings.database_url)
+_e_sqlite = _url_banco.startswith("sqlite")
 
 # `check_same_thread=False` é exclusivo do SQLite — passá-lo ao psycopg quebra a conexão.
 _connect_args = {"check_same_thread": False} if _e_sqlite else {}
@@ -24,7 +42,7 @@ _pool_kwargs: dict = (
 )
 
 engine = create_engine(
-    settings.database_url,
+    _url_banco,
     connect_args=_connect_args,
     pool_pre_ping=True,
     **_pool_kwargs,
