@@ -1,10 +1,18 @@
 # Blueprint do Render: cria o Web Service + o PostgreSQL de uma vez.
 # No painel: New + -> Blueprint -> selecionar este repositório.
+#
+# IMPORTANTE (o que voce precisa fazer na hora de criar):
+#   1. O plano padrao do Web Service aparece como Standard (US$ 25/mes).
+#      Troque para "Starter" (US$ 7/mes, 512 MB RAM, 0.5 CPU) na lista de
+#      Instance Types. E o suficiente para o app (a IA roda na Anthropic).
+#   2. Preencha as variaveis de ambiente marcadas como `sync: false` abaixo
+#      (elas nao vao para o Git).
+#   3. O DATABASE_URL e injetado automaticamente ao ligar o banco `mentor-db`.
 services:
   - type: web
     name: mentor-carreira
     runtime: docker
-    plan: starter          # US$7/mês. NÃO usar 'free': hiberna após 15min (cold start ~50s).
+    plan: starter          # US$7/mes. NAO usar 'free': hiberna apos 15min (cold start ~1min).
     region: oregon
     healthCheckPath: /health
     autoDeploy: true
@@ -16,7 +24,7 @@ services:
           property: connectionString
       - key: APP_ENV
         value: production
-      # sync: false = você preenche no painel; NÃO fica versionado no Git.
+      # sync: false = voce preenche no painel; NAO fica versionado no Git.
       - key: SECRET_KEY
         sync: false
       - key: ANTHROPIC_API_KEY
@@ -28,6 +36,6 @@ services:
 
 databases:
   - name: mentor-db
-    plan: free             # ~30 dias de validade: exportar os dados ao fim da coleta.
-    region: oregon
+    plan: free             # Postgres Free do Render: ~30 dias de validade.
+    region: oregon         # Exporte os dados ANTES de expirar (te passo o comando).
     postgresMajorVersion: "16"
