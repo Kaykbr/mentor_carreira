@@ -1,0 +1,53 @@
+%% Diagrama de Sequencia - Triagem (chat HTMX) e geracao do Perfil estruturado
+%% v1.3 - 2026-07 - rota HTMX retorna fragmento HTML; contexto_aluno calibra o mentor;
+%% ao finalizar, a IA gera o perfil com areas_afinidade (sem trilhas/recomendador).
+%% (Existe API JSON equivalente em triage.py: POST /triage/{id} e /triage/{id}/finalizar.)
+sequenceDiagram
+    autonumber
+    actor Aluno
+    participant Rt as paginas_web.py (HTMX)
+    participant Guard as verificar_proprio_aluno_html
+    participant PS as profile_service
+    participant CA as contexto_aluno
+    participant CC as claude_client
+    participant API as Anthropic API
+    participant DB as SQLite
+
+    rect rgb(240, 249, 255)
+    note over Aluno,DB: Enviar mensagem (POST /alunos/{id}/triagem/mensagem)
+    Aluno->>Rt: mensagem (form HTMX)
+    Rt->>Guard: sessao + dono do {id}?
+    Guard-->>Rt: ok (senao -> /login ou 403)
+    Rt->>PS: enviar_mensagem_triagem(id, texto)
+    PS->>DB: INSERT triage_messages (role=user)
+    PS->>PS: obter_historico(id) + nota de progresso
+    PS->>CA: nome / curso / periodo
+    PS->>CC: conversar_triagem(historico, contexto_aluno)
+    Note over PS: resposta passa por limpar_markdown antes de salvar
+    CC->>API: messages.create (retry/tenacity)
+    API-->>CC: resposta do mentor
+    CC-->>PS: texto
+    PS->>DB: INSERT triage_messages (role=assistant)
+    PS-->>Rt: resposta
+    Rt-->>Aluno: 200 fragmento HTML (_partials/mensagem_chat.html)
+    end
+
+    rect rgb(243, 244, 246)
+    note over Aluno,DB: Finalizar triagem (POST /alunos/{id}/triagem/finalizar)
+    Aluno->>Rt: finalizar
+    Rt->>Guard: sessao + dono do {id}?
+    Guard-->>Rt: ok
+    Rt->>PS: finalizar_triagem(id)
+    PS->>PS: obter_historico(id)
+    alt historico vazio
+        PS-->>Rt: ValueError -> flash + redirect
+    else tem historico
+        PS->>CC: gerar_perfil_estruturado(historico)
+        CC->>API: messages.create (tool_use forcado: salvar_perfil)
+        API-->>CC: bloco tool_use (JSON do perfil + areas_afinidade)
+        CC-->>PS: profile_json
+        PS->>DB: upsert student_profiles
+        PS-->>Rt: StudentProfile
+        Rt-->>Aluno: 303 Redirect -> /alunos/{id}/perfil
+    end
+    end

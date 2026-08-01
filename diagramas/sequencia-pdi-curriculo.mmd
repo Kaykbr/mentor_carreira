@@ -1,0 +1,59 @@
+%% Diagrama de Sequencia - Geracao do PDI e do Curriculo (a partir do perfil)
+%% v1.3 - 2026-07 - PDI e curriculo sao ancorados no perfil (stack + areas_afinidade);
+%% sem trilha/radar/RAG-por-lacuna. (Existe API JSON equivalente em pdi.py e curriculum.py.)
+sequenceDiagram
+    autonumber
+    actor Aluno
+    participant Rt as pdi_web.py / curriculo_web.py
+    participant Guard as verificar_proprio_aluno_html
+    participant PdiS as pdi_service
+    participant CvS as curriculum_service
+    participant PS as profile_service
+    participant CC as claude_client
+    participant API as Anthropic API
+    participant DB as SQLite
+
+    rect rgb(240, 249, 255)
+    note over Aluno,DB: Gerar PDI (POST /alunos/{id}/pdi/gerar)
+    Aluno->>Rt: gerar PDI
+    Rt->>Guard: sessao + dono do {id}?
+    Guard-->>Rt: ok (senao -> /login ou 403)
+    Rt->>PdiS: gerar_pdi(id)
+    PdiS->>PS: obter_perfil(id)
+    PS->>DB: SELECT student_profiles
+    alt sem perfil
+        PdiS-->>Rt: ValueError -> flash + redirect
+    else tem perfil
+        PdiS->>CC: gerar_pdi(profile_json + areas_afinidade, contexto)
+        CC->>API: messages.create (tool_use forcado: salvar_pdi)
+        API-->>CC: bloco tool_use (JSON do PDI)
+        CC-->>PdiS: pdi_json
+        PdiS->>PdiS: limpar_markdown + montar quadro_kanban a partir das acoes
+        PdiS->>DB: upsert pdis (preserva quadro existente)
+        PdiS-->>Rt: PDI
+        Rt-->>Aluno: 303 Redirect -> /alunos/{id}/pdi
+    end
+    end
+
+    rect rgb(243, 244, 246)
+    note over Aluno,DB: Gerar curriculo (POST /alunos/{id}/curriculo/gerar)
+    Aluno->>Rt: gerar curriculo
+    Rt->>Guard: sessao + dono do {id}?
+    Guard-->>Rt: ok
+    Rt->>CvS: gerar_curriculo(id)
+    CvS->>PS: obter_perfil(id)
+    PS->>DB: SELECT student_profiles
+    CvS->>PdiS: obter_pdi(id) (opcional - enriquece com Kanban concluido)
+    PdiS->>DB: SELECT pdis
+    alt sem perfil
+        CvS-->>Rt: ValueError -> flash + redirect
+    else tem perfil
+        CvS->>CC: gerar_curriculo(profile_json + stack/areas, pdi_json?, contexto)
+        CC->>API: messages.create (texto livre, sem tool_use)
+        API-->>CC: texto do curriculo (ATS)
+        CC-->>CvS: curriculum_text
+        CvS->>DB: upsert curriculums
+        CvS-->>Rt: Curriculum
+        Rt-->>Aluno: 303 Redirect -> /alunos/{id}/curriculo
+    end
+    end

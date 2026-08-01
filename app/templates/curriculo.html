@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block titulo %}Currículo · {{ aluno.nome }}{% endblock %}
+{% block tut_pagina %}curriculo{% endblock %}
+
+{% block conteudo %}
+    {% include '_partials/estilo_impressao_curriculo.html' %}
+
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Currículo</span>
+        </nav>
+        <h1>Currículo de {{ aluno.nome }}</h1>
+        <p class="texto-muted" style="margin:0 0 0.2rem;">
+            Otimizado para triagem automatizada
+            <abbr title="Applicant Tracking System — software de filtragem de currículos usado por empresas">ATS</abbr>.
+            Texto limpo, sem tabelas ou colunas.
+        </p>
+        {% if curriculo %}
+            <p class="texto-muted" style="margin:0;">Gerado em {{ curriculo.created_at.strftime('%d/%m/%Y às %H:%M') if curriculo.created_at else '' }}</p>
+        {% endif %}
+    </div>
+
+    {% if not curriculo %}
+        <div class="cartao" style="text-align:center; padding:2.5rem;">
+            <div style="font-size:2.5rem; margin-bottom:0.75rem;">📄</div>
+            <p style="font-size:1rem; color:var(--texto-muted); margin-bottom:0.5rem;">
+                O currículo ainda não foi gerado para este aluno.
+            </p>
+            {% if pdi %}
+                <p class="info" style="margin-bottom:1.25rem; text-align:left;">
+                    ✅ O PDI já foi gerado e será usado como referência adicional para um currículo mais alinhado.
+                </p>
+            {% else %}
+                <p class="aviso" style="margin-bottom:1.25rem; text-align:left;">
+                    💡 Dica: gerar o PDI antes do currículo tende a produzir um resultado mais alinhado com seus objetivos.
+                </p>
+            {% endif %}
+            <form method="post" action="/alunos/{{ aluno.id }}/curriculo/gerar" style="display:inline-flex; max-width:none; margin:0;" data-loading="Gerando currículo…">
+                <button type="submit">Gerar currículo</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="curriculo-acoes"
+             data-tut="1"
+             data-tut-titulo="O que dá para fazer com o currículo"
+             data-tut-texto="Copie o texto, exporte em PDF (via impressão), edite manualmente ou regenere com a IA. Como é texto puro, ele passa bem por sistemas ATS de triagem automática.">
+            <button class="botao botao-secundario" onclick="
+                navigator.clipboard.writeText(document.getElementById('texto-curriculo').innerText)
+                    .then(() => { this.textContent = '✓ Copiado!'; setTimeout(() => this.textContent = 'Copiar texto', 2000); })
+                    .catch(() => {});
+            ">Copiar texto</button>
+            <button class="botao botao-secundario" onclick="window.print()">Exportar como PDF</button>
+            <button type="button" class="botao" data-toggle="curriculo-view,curriculo-edit">✏️ Editar</button>
+            <button type="button" class="botao botao-secundario" x-data
+                @click="$dispatch('open-confirm', {
+                    message: 'Regenerar substituirá o texto atual. O texto editado manualmente será perdido. Continuar?',
+                    action: '/alunos/{{ aluno.id }}/curriculo/gerar',
+                    method: 'POST',
+                    perigo: true,
+                    confirmLabel: 'Regenerar currículo'
+                })">
+                ↺ Regenerar currículo
+            </button>
+        </div>
+
+        <div class="cartao" style="padding:0;" id="curriculo-view"
+             data-tut="2"
+             data-tut-titulo="Seu currículo geral"
+             data-tut-texto="Gerado a partir do seu perfil e do PDI, com as seções que recrutadores esperam. Atenção: a IA pode inventar dados (tecnologias, resultados, cursos), então revise cada linha antes de enviar e corrija ou remova qualquer coisa que não seja verdade.">
+            <pre id="texto-curriculo" class="curriculo-pre" data-destacar-secoes>{{ curriculo.curriculum_text }}</pre>
+        </div>
+
+        <form method="post" action="/alunos/{{ aluno.id }}/curriculo/editar" id="curriculo-edit" class="cartao oculto form-edicao" data-loading="Salvando…">
+            <label>Edite o texto do currículo
+                <textarea name="curriculum_text" rows="22" required>{{ curriculo.curriculum_text }}</textarea>
+            </label>
+            <div class="acoes">
+                <button type="button" class="botao botao-perigo" data-toggle="curriculo-view,curriculo-edit">✕ Cancelar</button>
+                <button type="submit">💾 Salvar currículo</button>
+            </div>
+        </form>
+
+        <div class="acoes" style="margin-top:1.25rem; justify-content:space-between;">
+            <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/pdi">← Voltar ao PDI</a>
+            <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}">Voltar ao painel</a>
+        </div>
+    {% endif %}
+
+    {# ============ Qualidade do currículo ============ #}
+    {% if curriculo and diagnostico %}
+    {% if diagnostico.pontuacao >= 70 %}{% set q_classe = 'badge-ok' %}
+    {% elif diagnostico.pontuacao >= 40 %}{% set q_classe = 'badge-pendente' %}
+    {% else %}{% set q_classe = 'badge-lacuna' %}{% endif %}
+
+    <div class="secao-icone" style="margin-top:2rem;"
+         data-tut="3"
+         data-tut-titulo="Qualidade do seu currículo"
+         data-tut-texto="Uma verificação automática do seu currículo contra as boas práticas de recrutamento e de sistemas ATS. É recalculada toda vez que você edita; use como checklist antes de enviar.">
+        <span>🩺</span><h3 style="margin:0;">Qualidade do seu currículo</h3>
+        <span class="badge {{ q_classe }}" style="margin-left:auto; font-size:1.05rem; padding:.3rem 1rem;">{{ diagnostico.pontuacao }}/100</span>
+    </div>
+    <p class="texto-muted" style="margin:.25rem 0 .75rem;">
+        {% if diagnostico.pontuacao >= 70 %}Seu currículo está bem estruturado. Veja abaixo os ajustes finos.
+        {% elif diagnostico.pontuacao >= 40 %}Boa base. Os itens marcados abaixo têm o maior impacto se corrigidos.
+        {% else %}Vários pontos importantes precisam de atenção. Comece pelos itens em vermelho.{% endif %}
+    </p>
+
+    <div class="cartao">
+        <ul class="checklist">
+            {% for item in diagnostico.itens %}
+            <li class="checklist-item checklist-{{ item.status }}">
+                <span class="checklist-icone" aria-hidden="true">
+                    {% if item.status == 'ok' %}✓{% elif item.status == 'atencao' %}!{% else %}×{% endif %}
+                </span>
+                <div>
+                    <p class="checklist-titulo">{{ item.titulo }}</p>
+                    <p class="checklist-detalhe">{{ item.detalhe }}</p>
+                    {% if item.como_corrigir %}
+                    <p class="checklist-corrigir">→ {{ item.como_corrigir }}</p>
+                    {% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    {# ---- Dicas da IA ---- #}
+    {% if analise %}
+        {% if analise_defasada %}
+        <div class="alerta alerta-aviso" role="status">
+            Você editou o currículo depois desta análise: as dicas abaixo são da versão anterior.
+            Analise novamente para atualizá-las.
+        </div>
+        {% endif %}
+
+        <div class="cartao" style="border-left:4px solid var(--azul)">
+            <div class="secao-icone"><span>🧠</span><h3>Leitura do mentor</h3></div>
+            <p style="margin:.35rem 0 0;">{{ analise.analise_json.resumo_avaliacao }}</p>
+        </div>
+
+        {% if analise.analise_json.pontos_fortes %}
+        <div class="cartao">
+            <div class="secao-icone"><span>💪</span><h3>O que já está bom</h3></div>
+            <ul style="margin:.35rem 0 0;">
+                {% for p in analise.analise_json.pontos_fortes %}<li>{{ p }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if analise.analise_json.melhorias_prioritarias %}
+        <div class="cartao">
+            <div class="secao-icone"><span>📈</span><h3>Melhorias prioritárias</h3></div>
+            <p class="texto-muted" style="margin:.15rem 0 .75rem;">Em ordem de impacto no resultado.</p>
+            {% for m in analise.analise_json.melhorias_prioritarias %}
+            <div class="melhoria">
+                <p class="melhoria-titulo"><span class="melhoria-num">{{ loop.index }}</span>{{ m.titulo }}</p>
+                <p class="melhoria-problema">{{ m.problema }}</p>
+                <p class="melhoria-sugestao"><strong>O que fazer:</strong> {{ m.sugestao }}</p>
+                {% if m.exemplo_reescrito %}
+                <div class="melhoria-exemplo">
+                    <p class="melhoria-exemplo-rotulo">Exemplo reescrito</p>
+                    <p style="margin:0;">{{ m.exemplo_reescrito }}</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if analise.analise_json.secoes_a_reforcar %}
+        <div class="cartao">
+            <div class="secao-icone"><span>🎯</span><h3>Seções a reforçar</h3></div>
+            <div class="tags" style="margin-top:.5rem;">
+                {% for s in analise.analise_json.secoes_a_reforcar %}
+                <span class="tag" style="background:var(--amarelo-bg);color:var(--amarelo-tx)">{{ s }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <div class="acoes" style="margin-bottom:1rem;">
+        <form method="post" action="/alunos/{{ aluno.id }}/curriculo/analisar"
+              style="display:inline-flex; max-width:none; margin:0;"
+              data-loading="Analisando seu currículo…">
+            <button type="submit" class="{% if analise and not analise_defasada %}botao botao-secundario{% else %}botao{% endif %}">
+                {% if analise %}↺ Analisar novamente{% else %}🧠 Analisar com IA{% endif %}
+            </button>
+        </form>
+    </div>
+    {% if not analise %}
+    <p class="texto-muted" style="margin:-0.5rem 0 1rem;">
+        A verificação acima é automática. A análise com IA acrescenta uma leitura qualitativa:
+        o que está bem escrito, o que priorizar e exemplos de trechos reescritos.
+    </p>
+    {% endif %}
+    {% endif %}
+
+    {# ============ Currículos por vaga ============ #}
+    <div class="secao-icone" style="margin-top:2rem;">
+        <span>🎯</span><h3 style="margin:0;">Currículos por vaga</h3>
+    </div>
+    <p class="texto-muted" style="margin:.25rem 0 .75rem;">
+        Cole uma vaga real e receba a análise de aderência, recomendações para ficar mais
+        competitivo e um currículo otimizado com as palavras-chave daquela vaga.
+    </p>
+
+    <div class="acoes" style="margin-bottom:1rem;"
+         data-tut="4"
+         data-tut-titulo="Currículos por vaga"
+         data-tut-texto="Além do currículo geral, você pode gerar uma versão sob medida para cada vaga: cole a descrição e receba a análise de aderência, recomendações e um currículo com as palavras-chave daquela vaga.">
+        <a class="botao" href="/alunos/{{ aluno.id }}/curriculo/vagas/nova">➕ Novo currículo por vaga</a>
+    </div>
+
+    {% if vagas %}
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+        {% for v in vagas %}
+        {% set score = v.analise_json.score %}
+        {% if score >= 70 %}{% set v_classe = 'badge-ok' %}
+        {% elif score >= 40 %}{% set v_classe = 'badge-pendente' %}
+        {% else %}{% set v_classe = 'badge-lacuna' %}{% endif %}
+        <div class="cartao" style="margin-bottom:0;">
+            <div class="secao-icone">
+                <span>📌</span>
+                <h3 style="font-size:1.05rem;">{{ v.cargo }}</h3>
+                <span class="badge {{ v_classe }}" style="margin-left:auto;">{{ score }}%</span>
+            </div>
+            <p class="texto-muted" style="margin:.25rem 0 .75rem;">
+                Gerado em {{ v.created_at.strftime('%d/%m/%Y') if v.created_at else '' }}
+            </p>
+            <a class="botao botao-secundario botao-sm" href="/alunos/{{ aluno.id }}/curriculo/vagas/{{ v.id }}">Abrir análise e currículo →</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="texto-muted">Nenhum currículo por vaga ainda. Analise a primeira vaga acima.</p>
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/editor.js"></script>
+{% endblock %}

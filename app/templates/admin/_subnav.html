@@ -1,0 +1,6 @@
+{# Sub-navegação do painel de administração. Espera a variável `secao`. #}
+<nav class="admin-subnav" aria-label="Seções do administrador">
+    <a href="/admin" class="{{ 'ativo' if secao == 'dashboard' else '' }}"><span aria-hidden="true">📊</span> Visão geral</a>
+    <a href="/admin/alunos" class="{{ 'ativo' if secao == 'alunos' else '' }}"><span aria-hidden="true">👥</span> Alunos</a>
+    <a href="/admin/sistema" class="{{ 'ativo' if secao == 'sistema' else '' }}"><span aria-hidden="true">⚙️</span> Sistema</a>
+</nav>

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block titulo %}Admin · Sistema{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header">
+        <h1>Sistema</h1>
+        <p class="texto-muted" style="margin:0;">Diagnóstico automático e configuração atual.</p>
+    </div>
+
+    {% include "admin/_subnav.html" %}
+
+    {# ---- Diagnóstico ---- #}
+    <div class="cartao">
+        <div class="secao-icone"><span>🩺</span><h3>Diagnóstico</h3></div>
+        <div class="diag-pills" style="margin-bottom:0.85rem;">
+            <span class="diag-badge ok">✓ {{ diag_resumo.ok }} ok</span>
+            <span class="diag-badge aviso">! {{ diag_resumo.aviso }} aviso(s)</span>
+            <span class="diag-badge erro">✕ {{ diag_resumo.erro }} erro(s)</span>
+        </div>
+        <ul class="diag-lista">
+            {% for c in checks %}
+                <li class="diag-item">
+                    <span class="diag-status {{ c.status }}" aria-label="{{ c.status }}">
+                        {% if c.status == 'ok' %}✓{% elif c.status == 'aviso' %}!{% else %}✕{% endif %}
+                    </span>
+                    <span class="diag-nome">{{ c.nome }}</span>
+                    <span class="diag-detalhe texto-muted">{{ c.detalhe }}</span>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    {# ---- Configuração (somente leitura) ---- #}
+    <div class="cartao">
+        <div class="secao-icone"><span>⚙️</span><h3>Configuração</h3></div>
+        <p class="texto-muted" style="margin-top:0;">
+            Somente leitura. Os valores vêm do ambiente (<code>.env</code>); segredos aparecem mascarados.
+            Para alterar, edite o <code>.env</code> e reinicie o servidor.
+        </p>
+        <table class="admin-table">
+            <thead><tr><th>Variável</th><th>Valor</th></tr></thead>
+            <tbody>
+                {% for c in config %}
+                    <tr>
+                        <td><code>{{ c.chave }}</code>{% if c.sensivel %} <span class="tag">segredo</span>{% endif %}</td>
+                        <td>{{ c.valor }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

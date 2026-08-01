@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block titulo %}PDI · {{ aluno.nome }}{% endblock %}
+{% block tut_pagina %}pdi{% endblock %}
+
+{% block conteudo %}
+<div class="pagina-header">
+    <nav class="breadcrumb" aria-label="Localização">
+        <a href="/alunos/{{ aluno.id }}">Painel</a>
+        <span aria-hidden="true"> › </span>
+        <span aria-current="page">PDI</span>
+    </nav>
+    <h1>Plano de Desenvolvimento Individual</h1>
+    <p class="texto-muted" style="margin:0 0 0.25rem;">Seu roteiro personalizado de evolução de carreira, gerado com base na triagem.</p>
+    <p class="texto-muted" style="margin:0;">{{ aluno.nome }} · {{ aluno.curso }}</p>
+</div>
+
+{% if not pdi %}
+<div class="cartao" style="text-align:center; padding:2.5rem;">
+    <div style="font-size:2.5rem; margin-bottom:0.75rem;">📈</div>
+    <p style="font-size:1rem; margin-bottom:1.25rem; color:var(--texto-muted);">
+        O Plano de Desenvolvimento Individual ainda não foi gerado para este aluno.
+    </p>
+    <form method="post" action="/alunos/{{ aluno.id }}/pdi/gerar" style="display:inline-flex; max-width:none; margin:0;"
+        data-loading="Gerando PDI…">
+        <button type="submit">Gerar PDI</button>
+    </form>
+</div>
+{% else %}
+
+{# Ações da página: Voltar (esquerda) ; Editar/Regenerar (meio) ; Continuar (direita) #}
+<div class="acoes" style="margin-bottom:1.25rem;">
+    <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/perfil">← Voltar ao perfil</a>
+    <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/pdi/editar">✏️ Editar PDI</a>
+    <button type="button" class="botao botao-secundario" x-data
+        @click="$dispatch('open-confirm', {
+            message: 'Regenerar substituirá o PDI atual. O quadro Kanban será preservado. Continuar?',
+            action: '/alunos/{{ aluno.id }}/pdi/gerar',
+            method: 'POST',
+            perigo: true,
+            confirmLabel: 'Regenerar PDI'
+        })">
+        ↺ Regenerar com a IA
+    </button>
+    <a class="botao" href="/alunos/{{ aluno.id }}/curriculo">Continuar para o currículo →</a>
+</div>
+
+{# Autonomia: o plano é um ponto de partida que o aluno pode curar #}
+<div class="pdi-nota" role="note">
+    <span class="pdi-nota-icone" aria-hidden="true">✍️</span>
+    Este plano é um <strong>ponto de partida</strong> gerado a partir da sua triagem.
+    Ele é seu: <a href="/alunos/{{ aluno.id }}/pdi/editar">edite as metas e ações</a> e
+    reorganize o quadro abaixo do seu jeito, adaptando ao que faz sentido para você.
+</div>
+
+{# Painel explicativo (metodologia) #}
+<details class="metodologia" open
+    data-tut="1"
+    data-tut-titulo="Entenda a metodologia"
+    data-tut-texto="Antes de tudo: este bloco explica os conceitos usados no seu plano (metas SMART, modelo 70-20-10, perfil em T e Kanban). Pode recolher quando já souber.">
+    <summary>📚 Como funciona seu PDI (metodologia)</summary>
+    <div class="metodologia-corpo">
+        <p>
+            Um <strong>PDI (Plano de Desenvolvimento Individual)</strong> é um mapa da sua
+            evolução profissional. Ele conecta, em sequência, quatro camadas:
+            <strong>objetivo</strong> (onde você quer chegar) →
+            <strong>competências</strong> (o que precisa dominar) →
+            <strong>ações</strong> (o que fazer na prática) →
+            <strong>prazos</strong> (em que ordem). Esta página organiza essas camadas e
+            transforma as ações em um quadro de acompanhamento.
+        </p>
+
+        <h3>🎯 Metas SMART</h3>
+        <p>Boas metas seguem cinco critérios:</p>
+        <ul>
+            <li><strong>S</strong>específicas — dizem exatamente o quê.</li>
+            <li><strong>M</strong>ensuráveis — dá para medir se você cumpriu.</li>
+            <li><strong>A</strong>tingíveis — realistas para o seu momento.</li>
+            <li><strong>R</strong>elevantes — conectadas ao seu objetivo.</li>
+            <li><strong>T</strong>emporais — com prazo definido.</li>
+        </ul>
+        <p>
+            Em vez de "aprender back-end", prefira "construir e publicar 2 APIs REST com
+            testes em 3 meses" — assim dá para saber se cumpriu.
+        </p>
+
+        <h3>🧩 Modelo 70-20-10</h3>
+        <p>Equilibre o aprendizado em três fontes — só curso não forma um bom profissional:</p>
+        <ul>
+            <li><strong>70% na prática</strong> — projetos reais, desafios, código.</li>
+            <li><strong>20% com outras pessoas</strong> — mentoria, code review, comunidades, pair programming.</li>
+            <li><strong>10% em educação formal</strong> — cursos, livros, certificações.</li>
+        </ul>
+
+        <h3>🪜 Matriz de competências / perfil em T</h3>
+        <p>
+            O <strong>perfil em T</strong> combina <em>profundidade</em> em uma
+            especialidade (a barra vertical do T — ex.: back-end) com <em>amplitude</em>
+            em temas vizinhos (a barra horizontal — banco de dados, DevOps, produto). Use
+            as competências do PDI para escolher onde aprofundar e onde ampliar.
+        </p>
+
+        <h3>🗂️ Quadro Kanban</h3>
+        <p>
+            O Kanban torna o trabalho <strong>visível</strong>: cada ação é um card que
+            caminha por <strong>A Fazer → Em Progresso → Concluído</strong>. Evite começar
+            muitas ações ao mesmo tempo (mantenha poucas "Em Progresso") e mova os cards
+            conforme avança. É a sua execução do PDI no dia a dia.
+        </p>
+
+        <h3>✅ Como usar esta página</h3>
+        <p>
+            Revise o <strong>objetivo</strong>, as <strong>metas</strong> e as
+            <strong>competências</strong> (use "Editar PDI" para ajustá-los ao seu
+            contexto); siga o <strong>cronograma</strong> como ordem sugerida; e acompanhe
+            o dia a dia no <strong>quadro</strong>, arrastando os cards entre as colunas.
+        </p>
+    </div>
+</details>
+
+{# Objetivo geral #}
+<div class="cartao cartao-objetivo"
+    data-tut="2"
+    data-tut-titulo="Seu plano, do topo para a base"
+    data-tut-texto="O objetivo geral guia tudo. Abaixo dele vêm as metas de curto e médio prazo, as competências a desenvolver (priorizando as lacunas da sua área) e o cronograma sugerido.">
+    <div class="secao-icone"><span>🎯</span>
+        <h3>Objetivo geral</h3>
+    </div>
+    <p style="margin:0; font-size:1.05rem;">{{ pdi_json.objetivo_geral or "Não informado" }}</p>
+</div>
+
+{# Metas #}
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:1rem; margin-bottom:1rem;">
+    <div class="cartao" style="margin-bottom:0;">
+        <div class="secao-icone"><span>🏃</span>
+            <h3>Metas de curto prazo</h3>
+        </div>
+        {% if pdi_json.metas_curto_prazo %}
+        <ul style="margin:0.25rem 0 0;">{% for meta in pdi_json.metas_curto_prazo %}<li>{{ meta }}</li>{% endfor %}</ul>
+        {% else %}<p class="texto-muted">Não informado.</p>{% endif %}
+    </div>
+    <div class="cartao" style="margin-bottom:0;">
+        <div class="secao-icone"><span>🚀</span>
+            <h3>Metas de médio prazo</h3>
+        </div>
+        {% if pdi_json.metas_medio_prazo %}
+        <ul style="margin:0.25rem 0 0;">{% for meta in pdi_json.metas_medio_prazo %}<li>{{ meta }}</li>{% endfor %}</ul>
+        {% else %}<p class="texto-muted">Não informado.</p>{% endif %}
+    </div>
+</div>
+
+{# Competências #}
+<div class="cartao">
+    <div class="secao-icone"><span>💡</span>
+        <h3>Competências a desenvolver</h3>
+    </div>
+    {% if pdi_json.competencias_a_desenvolver %}
+    <div class="competencias-grid" style="margin-top:0.75rem;">
+        {% for comp in pdi_json.competencias_a_desenvolver %}
+        <div class="competencia-item">
+            <div class="competencia-nome">{{ comp.nome }}</div>
+            <div class="competencia-motivo">{{ comp.motivo }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}<p class="texto-muted">Não informado.</p>{% endif %}
+</div>
+
+{# Cronograma #}
+<div class="cartao">
+    <div class="secao-icone"><span>📅</span>
+        <h3>Cronograma</h3>
+    </div>
+    <p class="texto-muted" style="margin:0 0 0.5rem;">A ordem sugerida de evolução. As ações do dia a dia ficam no
+        quadro abaixo.</p>
+    {% if pdi_json.cronograma %}
+    <div class="timeline">
+        {% for bloco in pdi_json.cronograma %}
+        <div class="timeline-item">
+            <div class="timeline-periodo">{{ bloco.periodo }}</div>
+            <div class="timeline-foco">{{ bloco.foco }}</div>
+            {% if bloco.atividades %}
+            <ul>{% for atividade in bloco.atividades %}<li>{{ atividade }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}<p class="texto-muted">Não informado.</p>{% endif %}
+</div>
+
+{# Quadro Kanban #}
+<div class="secao-icone" style="margin-top:1.5rem;"><span>🗂️</span>
+    <h3>Quadro de ações</h3>
+</div>
+<p class="texto-muted" style="margin:0 0 0.4rem;">
+    <strong>Arraste</strong> entre colunas · <strong>Clique</strong> no texto para editar ·
+    <strong>← →</strong> no teclado para mover · Salvo automaticamente.
+</p>
+<p style="margin:0 0 0.75rem;"><span class="kanban-progresso" id="kanban-progresso"></span></p>
+
+<section class="kanban" id="kanban" data-url="/alunos/{{ aluno.id }}/pdi/quadro"
+    data-tut="3"
+    data-tut-titulo="Acompanhe suas ações no quadro"
+    data-tut-texto="Cada ação do plano vira um card. Arraste entre as colunas (ou use ← →), clique no texto para editar e use “+ Adicionar” para criar novas. Tudo é salvo automaticamente.">
+    {% set colunas = [("a_fazer", "A Fazer", "📋"), ("em_progresso", "Em Progresso", "⏳"), ("concluido", "Concluído",
+    "✅")] %}
+    {% for chave, rotulo, icone in colunas %}
+    <div class="kanban-col" data-coluna="{{ chave }}">
+        <div class="kanban-col-head">
+            <h4>{{ icone }} {{ rotulo }}</h4>
+            <span class="kanban-count" aria-label="quantidade de cards">0</span>
+        </div>
+        <div class="kanban-cards" data-coluna="{{ chave }}">
+            {% for card in pdi_json.quadro_kanban if card.coluna == chave %}
+            <article class="kanban-card{% if chave == 'concluido' %} card-concluido{% endif %}" draggable="true"
+                tabindex="0" data-id="{{ card.id }}" data-coluna="{{ card.coluna }}" role="group"
+                aria-label="Ação do quadro. Clique para editar; arraste ou use as setas do teclado para mover de coluna.">
+                <button type="button" class="card-excluir" title="Excluir card" aria-label="Excluir card">×</button>
+                <p class="kanban-card-texto">{{ card.texto }}</p>
+                {% if card.categoria %}<span class="kanban-card-tag">{{ card.categoria }}</span>{% endif %}
+            </article>
+            {% endfor %}
+        </div>
+        <form class="kanban-add" data-coluna="{{ chave }}">
+            <input type="text" class="kanban-add-input" placeholder="Nova ação…" maxlength="500"
+                aria-label="Texto da nova ação">
+            <button type="submit" class="botao-secundario">+ Adicionar</button>
+        </form>
+    </div>
+    {% endfor %}
+</section>
+
+{# Modelo de card usado pelo JS ao adicionar uma nova ação #}
+<template id="kanban-card-template">
+    <article class="kanban-card" draggable="true" tabindex="0" data-id="" data-coluna="" role="group"
+        aria-label="Ação do quadro. Clique para editar; arraste ou use as setas do teclado para mover de coluna.">
+        <button type="button" class="card-excluir" title="Excluir card" aria-label="Excluir card">×</button>
+        <p class="kanban-card-texto"></p>
+    </article>
+</template>
+
+<div class="acoes" style="margin-top:1.5rem;">
+    <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}">← Painel</a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if pdi %}
+<script src="/static/kanban.js"></script>
+{% endif %}
+{% endblock %}

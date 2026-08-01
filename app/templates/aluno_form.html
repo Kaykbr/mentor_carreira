@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block titulo %}Novo aluno{% endblock %}
+
+{% block conteudo %}
+<div class="auth-card">
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/login">Entrar</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Cadastro</span>
+        </nav>
+        <h1>Cadastrar novo aluno</h1>
+    </div>
+
+    {% if erro %}
+        <p class="erro" role="alert">{{ erro }}</p>
+    {% endif %}
+
+    <div class="form-cartao">
+        <form method="post" action="/alunos/novo">
+            {% if exige_convite %}
+            <div class="campo">
+                <label for="codigo_convite">Código de convite</label>
+                <input type="text" id="codigo_convite" name="codigo_convite"
+                       placeholder="Informe o código recebido" required autocomplete="off">
+                <small class="campo-dica">Código enviado junto com o link da pesquisa.</small>
+            </div>
+            {% endif %}
+
+            <div class="campo">
+                <label for="nome">Nome completo</label>
+                <input type="text" id="nome" name="nome" value="{{ nome or '' }}"
+                       placeholder="Ex.: Ana Oliveira" autocomplete="name" required>
+            </div>
+
+            <div class="campo">
+                <label for="email">E-mail institucional</label>
+                <input type="email" id="email" name="email" value="{{ email or '' }}"
+                       placeholder="seu@email.com" autocomplete="email" required>
+            </div>
+
+            <div class="campo">
+                <label for="periodo">Período letivo atual</label>
+                <select id="periodo" name="periodo" required>
+                    <option value="" disabled {% if not periodo %}selected{% endif %}>Selecione o período</option>
+                    {% for p in range(1, 9) %}
+                        <option value="{{ p }}" {% if periodo|default(0)|int == p %}selected{% endif %}>{{ p }}º período</option>
+                    {% endfor %}
+                </select>
+                <small class="campo-dica">Selecione o semestre em que você está (1 a 8).</small>
+            </div>
+
+            <div class="campo">
+                <label for="senha">Senha</label>
+                <div class="campo-senha">
+                    <input type="password" id="senha" name="senha" minlength="8"
+                           autocomplete="new-password" required>
+                    <button type="button" class="toggle-senha" data-target="senha"
+                            aria-pressed="false" aria-label="Mostrar senha">Mostrar</button>
+                </div>
+                <small class="campo-dica">Mínimo de 8 caracteres.</small>
+            </div>
+
+            <div class="campo">
+                <label for="confirmar_senha">Confirmar senha</label>
+                <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="8"
+                       autocomplete="new-password" data-match="senha" required>
+            </div>
+
+            <div style="padding-top:0.25rem;">
+                <button type="submit">Cadastrar aluno</button>
+            </div>
+        </form>
+        <p class="texto-muted" style="margin-top:1rem; margin-bottom:0;">
+            Já tem conta? <a href="/login">Entrar</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

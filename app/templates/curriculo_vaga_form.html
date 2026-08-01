@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block titulo %}Novo currículo por vaga · {{ aluno.nome }}{% endblock %}
+{% block tut_pagina %}curriculo_vaga_form{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <a href="/alunos/{{ aluno.id }}/curriculo">Currículo</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Novo currículo por vaga</span>
+        </nav>
+        <h1>Novo currículo por vaga</h1>
+        <p class="texto-muted" style="margin:0;">
+            Cole a descrição de uma vaga e receba: sua aderência a ela, recomendações para
+            ficar mais competitivo e um currículo otimizado com as palavras-chave da vaga.
+        </p>
+    </div>
+
+    {% if erro %}
+        <p class="erro" role="alert">{{ erro }}</p>
+    {% endif %}
+
+    <div class="cartao"
+         data-tut="1"
+         data-tut-titulo="Cole a vaga inteira"
+         data-tut-texto="Copie a descrição completa de uma vaga real (LinkedIn, Gupy, etc.), com requisitos, responsabilidades e stack. Quanto mais completo o texto, melhor a análise. A geração leva até 1 minuto.">
+        <div class="secao-icone"><span>🔍</span><h3>Descrição da vaga</h3></div>
+        <form method="post" action="/alunos/{{ aluno.id }}/curriculo/vagas"
+              style="max-width:none; gap:.75rem;"
+              data-loading="Analisando a vaga e gerando o currículo… (pode levar até 1 minuto)">
+            <label style="display:flex; flex-direction:column; gap:.3rem; margin-top:.25rem;">
+                Cole o texto completo da vaga aqui:
+                <textarea name="jd_text" rows="12" required minlength="50" maxlength="8000"
+                    placeholder="Copie e cole a descrição completa da vaga (requisitos, responsabilidades, stack…)">{{ jd_text or '' }}</textarea>
+            </label>
+            <p class="campo-dica" style="margin:0;">
+                O sistema vai <strong>1)</strong> extrair os requisitos da vaga,
+                <strong>2)</strong> comparar com o seu perfil e
+                <strong>3)</strong> gerar recomendações + um currículo direcionado.
+                O resultado fica salvo na sua página de currículos.
+            </p>
+            <div>
+                <button type="submit" class="botao">Analisar vaga e gerar currículo</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="acoes">
+        <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/curriculo">← Voltar aos currículos</a>
+    </div>
+{% endblock %}

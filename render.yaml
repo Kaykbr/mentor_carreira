@@ -1,0 +1,33 @@
+# Blueprint do Render: cria o Web Service + o PostgreSQL de uma vez.
+# No painel: New + -> Blueprint -> selecionar este repositório.
+services:
+  - type: web
+    name: mentor-carreira
+    runtime: docker
+    plan: starter          # US$7/mês. NÃO usar 'free': hiberna após 15min (cold start ~50s).
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Injetado automaticamente pelo Render ao ligar o banco abaixo.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mentor-db
+          property: connectionString
+      - key: APP_ENV
+        value: production
+      # sync: false = você preenche no painel; NÃO fica versionado no Git.
+      - key: SECRET_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: INVITE_CODE
+        sync: false
+
+databases:
+  - name: mentor-db
+    plan: free             # ~30 dias de validade: exportar os dados ao fim da coleta.
+    region: oregon
+    postgresMajorVersion: "16"

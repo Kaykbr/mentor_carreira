@@ -1,0 +1,57 @@
+%% Diagrama de Componentes - Modulo de IA vs camada deterministica
+%% v1.3 - 2026-07 - 7 operacoes de IA; camada deterministica = competencias + RAG
+%% (usados pela Analise de Vaga) e checklist do curriculo. Trilhas/radar removidos.
+flowchart TB
+    subgraph ia["Modulo de IA - claude_client (7 operacoes)"]
+        direction TB
+        infra["singleton + timeout 60s + retry (tenacity)<br/>tool_use forcado p/ saidas estruturadas"]
+        op1["conversar_triagem<br/>(chat)"]
+        op2["gerar_perfil_estruturado<br/>(tool_use, + areas_afinidade)"]
+        op3["gerar_pdi<br/>(tool_use)"]
+        op4["gerar_curriculo<br/>(texto livre)"]
+        op5["extrair_requisitos_vaga<br/>(tool_use)"]
+        op6["gerar_recomendacoes_vaga<br/>(tool_use)"]
+        op7["analisar_curriculo<br/>(tool_use)"]
+    end
+
+    prompts["app/prompts<br/>triagem / perfil / pdi / curriculo /<br/>analise_vaga / recomendacoes_vaga / analise_curriculo"]
+    api["Anthropic API<br/>claude-haiku-4-5 (configuravel)"]
+    txt["texto.limpar_markdown<br/>(saidas sem Markdown)"]
+
+    subgraph det["Camada deterministica (sem IA)"]
+        direction TB
+        comp["competencias + sinonimos<br/>(substring bidirecional + variantes)"]
+        rag["RAG (rag_service)<br/>+ corpus recursos_aprendizado"]
+        chk["checklist do curriculo<br/>(curriculo_qualidade)"]
+    end
+
+    op1 --> prompts
+    op2 --> prompts
+    op3 --> prompts
+    op4 --> prompts
+    op5 --> prompts
+    op6 --> prompts
+    op7 --> prompts
+    op1 --> api
+    op2 --> api
+    op3 --> api
+    op4 --> api
+    op5 --> api
+    op6 --> api
+    op7 --> api
+
+    op1 -. saida limpa .-> txt
+    op2 -. saida limpa .-> txt
+    op3 -. saida limpa .-> txt
+
+    rag --> comp
+    op5 -. matching + recursos .-> comp
+    op5 -. recursos p/ lacunas .-> rag
+    op7 -. recebe diagnostico .-> chk
+
+    classDef iaC fill:#fef9c3,stroke:#a16207;
+    classDef detC fill:#dcfce7,stroke:#15803d;
+    classDef ext fill:#e0e7ff,stroke:#3730a3;
+    class op1,op2,op3,op4,op5,op6,op7,infra iaC;
+    class comp,rag,chk detC;
+    class api,prompts,txt ext;

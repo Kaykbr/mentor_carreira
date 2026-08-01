@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block titulo %}Admin · Visão geral{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header">
+        <h1>Painel de administração</h1>
+        <p class="texto-muted" style="margin:0;">Olá, {{ admin.nome }} — visão geral do sistema.</p>
+    </div>
+
+    {% include "admin/_subnav.html" %}
+
+    {# ---- KPIs ---- #}
+    <div class="stat-grid">
+        <div class="stat-card"><div class="stat-num">{{ m.total }}</div><div class="stat-label">Alunos</div></div>
+        <div class="stat-card"><div class="stat-num">{{ m.com_triagem }}</div><div class="stat-label">Com triagem</div></div>
+        <div class="stat-card"><div class="stat-num">{{ m.com_perfil }}</div><div class="stat-label">Com perfil</div></div>
+        <div class="stat-card"><div class="stat-num">{{ m.com_pdi }}</div><div class="stat-label">Com PDI</div></div>
+        <div class="stat-card"><div class="stat-num">{{ m.com_curriculo }}</div><div class="stat-label">Com currículo</div></div>
+        <div class="stat-card"><div class="stat-num">{{ m.admins }}</div><div class="stat-label">Administradores</div></div>
+    </div>
+
+    {# ---- Diagnóstico (resumo) ---- #}
+    <div class="cartao">
+        <div class="secao-icone"><span>🩺</span><h3>Diagnóstico do sistema</h3></div>
+        <div class="diag-pills">
+            <span class="diag-badge ok">✓ {{ diag_resumo.ok }} ok</span>
+            <span class="diag-badge aviso">! {{ diag_resumo.aviso }} aviso(s)</span>
+            <span class="diag-badge erro">✕ {{ diag_resumo.erro }} erro(s)</span>
+        </div>
+        <a class="botao botao-secundario" href="/admin/sistema" style="margin-top:0.85rem;">Ver verificações detalhadas →</a>
+    </div>
+
+    {# ---- Funil de conclusão ---- #}
+    <div class="cartao">
+        <div class="secao-icone"><span>📈</span><h3>Funil de conclusão</h3></div>
+        <div class="funil">
+            {% for f in m.funil %}
+                <div class="funil-linha">
+                    <div class="funil-rotulo">{{ f.etapa }}</div>
+                    <div class="funil-barra"><div class="funil-fill" style="width: {{ f.pct }}%;"></div></div>
+                    <div class="funil-valor">{{ f.valor }} <span class="texto-muted">({{ f.pct }}%)</span></div>
+                </div>
+            {% else %}
+                <p class="texto-muted">Sem dados ainda — o funil aparece com os primeiros alunos.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="admin-2col">
+        {# ---- Distribuição por período ---- #}
+        <div class="cartao" style="margin-bottom:0;">
+            <div class="secao-icone"><span>🎓</span><h3>Alunos por período</h3></div>
+            <div class="barras">
+                {% for b in m.por_periodo %}
+                    <div class="barra" title="{{ b.periodo }}º período: {{ b.valor }} aluno(s)">
+                        <div class="barra-valor">{{ b.valor or '' }}</div>
+                        <div class="barra-track"><div class="barra-fill" style="height: {{ b.pct }}%;"></div></div>
+                        <div class="barra-label">{{ b.periodo }}</div>
+                    </div>
+                {% else %}
+                    <p class="texto-muted">Sem alunos cadastrados ainda.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# ---- Cadastros por mês ---- #}
+        <div class="cartao" style="margin-bottom:0;">
+            <div class="secao-icone"><span>🗓️</span><h3>Cadastros por mês</h3></div>
+            {% if m.por_mes %}
+                <div class="barras">
+                    {% for b in m.por_mes %}
+                        <div class="barra" title="{{ b.mes }}: {{ b.valor }} cadastro(s)">
+                            <div class="barra-valor">{{ b.valor }}</div>
+                            <div class="barra-track"><div class="barra-fill azul" style="height: {{ b.pct }}%;"></div></div>
+                            <div class="barra-label">{{ b.mes[5:] }}/{{ b.mes[2:4] }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="texto-muted">Sem cadastros registrados ainda.</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block titulo %}Admin · Alunos{% endblock %}
+
+{% block conteudo %}
+    {% macro ponto(ativo) %}
+        {% if ativo %}<span class="status-dot sim" title="sim">✓</span>{% else %}<span class="status-dot nao" title="não">–</span>{% endif %}
+    {% endmacro %}
+
+    <div class="pagina-header">
+        <h1>Alunos</h1>
+        <p class="texto-muted" style="margin:0;">{{ linhas | length }} aluno(s) cadastrado(s).</p>
+    </div>
+
+    {% include "admin/_subnav.html" %}
+
+    {% if msg %}<p class="info" role="status">{{ msg }}</p>{% endif %}
+    {% if erro %}<p class="erro" role="alert">{{ erro }}</p>{% endif %}
+
+    <div class="cartao" style="padding:0; overflow-x:auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Aluno</th>
+                    <th>Período</th>
+                    <th>Triagem</th>
+                    <th>Perfil</th>
+                    <th>PDI</th>
+                    <th>Currículo</th>
+                    <th>Admin</th>
+                    <th>Cadastro</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in linhas %}
+                    <tr>
+                        <td>
+                            <strong>{{ l.aluno.nome }}</strong><br>
+                            <span class="texto-muted">{{ l.aluno.email }}</span>
+                        </td>
+                        <td>{{ l.aluno.periodo }}º</td>
+                        <td>{{ ponto(l.tem_triagem) }}</td>
+                        <td>{{ ponto(l.tem_perfil) }}</td>
+                        <td>{{ ponto(l.tem_pdi) }}</td>
+                        <td>{{ ponto(l.tem_curriculo) }}</td>
+                        <td>{% if l.aluno.is_admin %}<span class="tag tag-verde">admin</span>{% else %}—{% endif %}</td>
+                        <td class="texto-muted">{{ l.aluno.created_at.strftime('%d/%m/%Y') if l.aluno.created_at else '' }}</td>
+                        <td><a class="botao botao-secundario botao-sm" href="/admin/alunos/{{ l.aluno.id }}">Gerenciar</a></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="9" class="texto-muted" style="text-align:center; padding:1.5rem;">Nenhum aluno cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

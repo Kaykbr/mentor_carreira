@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__9bc1754a-b565-4096-8f71-a82390d3f419__list_recent_files",
+      "Bash(mkdir -p \"/c/Users/kayky/Downloads/PlanilhaFinancas\")",
+      "Bash(powershell -Command \"\\(Get-Content 'C:\\\\Users\\\\kayky\\\\Downloads\\\\Projeto-TCC\\\\app\\\\static\\\\style.css' | Measure-Object -Line\\).Lines\")",
+      "Bash(echo \"checking write tool availability via plan file path\" && ls \"C:\\\\Users\\\\kayky\\\\.claude\\\\plans\\\\\")",
+      "Bash(sort -k2)"
+    ]
+  }
+}

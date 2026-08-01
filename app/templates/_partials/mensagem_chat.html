@@ -1,0 +1,20 @@
+{# Fragmento HTMX retornado por POST /alunos/{id}/triagem/mensagem.
+   Contém a mensagem do aluno + resposta do mentor (ou mensagem de erro).
+   NÃO estende base.html — é um partial puro. #}
+
+<div class="mensagem mensagem-user mensagem-nova">
+    <span>{{ mensagem_user }}</span>
+    <time class="mensagem-tempo">{{ hora }}</time>
+</div>
+
+{% if resposta %}
+<div class="mensagem mensagem-assistant mensagem-nova">
+    <span>{{ resposta }}</span>
+    <time class="mensagem-tempo">{{ hora }}</time>
+</div>
+{% elif erro %}
+<div class="mensagem mensagem-erro mensagem-nova" role="alert">
+    <svg class="icon icon-sm" aria-hidden="true"><use href="/static/icons.svg#icon-warning"/></svg>
+    <span>{{ erro }}</span>
+</div>
+{% endif %}

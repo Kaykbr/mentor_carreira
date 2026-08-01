@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block titulo %}Triagem · {{ aluno.nome }}{% endblock %}
+{% block tut_pagina %}triagem{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Triagem</span>
+        </nav>
+        <h1>Triagem inicial</h1>
+        <p class="texto-muted" style="margin:0 0 0.25rem;">Converse com o mentor e finalize para gerar seu perfil profissional.</p>
+    </div>
+
+    {% if perfil %}
+        <div class="alerta alerta-aviso" role="status">
+            A triagem já foi finalizada e o perfil foi gerado. Você ainda pode conversar, mas será necessário finalizar novamente para atualizar o perfil.
+        </div>
+    {% endif %}
+
+    <h2 style="font-size:1.25rem; margin:1.25rem 0 0.5rem;">Conversa com o mentor</h2>
+
+    <div id="chat"
+         data-tut="1"
+         data-tut-titulo="A conversa acontece aqui"
+         data-tut-texto="O mentor faz uma pergunta por vez e cobre 7 pontos (objetivo, experiências, stack, soft skills, restrições e formação). Não precisa saber tudo: responder ‘ainda não sei’ também ajuda.">
+        {% if not mensagens %}
+            <p id="chat-vazio" class="chat-vazio">
+                💬 Olá! Para começar, se apresente ao mentor — por exemplo: período que você
+                está cursando, o que já estudou e o que busca na carreira. Ele guia o resto da conversa.
+            </p>
+        {% endif %}
+        {% for mensagem in mensagens %}
+            <div class="mensagem {{ 'mensagem-user' if mensagem.role == 'user' else 'mensagem-assistant' }}">
+                <span>{{ mensagem.content }}</span>
+                <time class="mensagem-tempo">{{ mensagem.created_at.strftime('%H:%M') if mensagem.created_at else '' }}</time>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Indicador "pensando..." (HTMX indicator) -->
+    <div id="chat-pensando" class="mensagem mensagem-assistant pensando htmx-indicator" aria-live="polite" aria-label="Mentor está digitando…">
+        <span></span><span></span><span></span>
+    </div>
+
+    <form id="form-mensagem"
+          data-tut="2"
+          data-tut-titulo="Escreva sua resposta"
+          data-tut-texto="Quanto mais concreto (tecnologias que usou, projetos, resultados), melhor ficam o seu perfil, o PDI e o currículo gerados depois."
+          hx-post="/alunos/{{ aluno.id }}/triagem/mensagem"
+          hx-target="#chat"
+          hx-swap="beforeend"
+          hx-indicator="#chat-pensando"
+          hx-disabled-elt="#btn-enviar, #campo-mensagem"
+    >
+        <input type="text" id="campo-mensagem" name="mensagem"
+               placeholder="Digite sua mensagem para o mentor..."
+               maxlength="5000" autocomplete="off" required
+               aria-describedby="msg-contador">
+        <button type="submit" id="btn-enviar">Enviar</button>
+    </form>
+    <small id="msg-contador" class="campo-dica" style="text-align:right; display:block;" aria-live="polite"></small>
+
+    <div class="triagem-finalizar"
+         data-tut="3"
+         data-tut-titulo="Finalize quando estiver pronto"
+         data-tut-texto="Quando o mentor tiver informações suficientes, clique aqui: seu perfil profissional é gerado automaticamente e o PDI e o Currículo são desbloqueados. Você pode revisar e editar tudo depois.">
+        <p class="triagem-finalizar-titulo">
+            Quando o mentor tiver coletado informações suficientes, finalize.
+            Isso gera automaticamente seu <strong>Perfil profissional</strong>
+            e desbloqueia o PDI e o Currículo.
+        </p>
+        <button type="button" class="botao" x-data
+            @click="$dispatch('open-confirm', {
+                message: 'Finalizar vai gerar seu perfil automaticamente. Você poderá editá-lo depois. Continuar?',
+                action: '/alunos/{{ aluno.id }}/triagem/finalizar',
+                method: 'POST',
+                confirmLabel: 'Finalizar'
+            })">
+            ✓ Finalizar e gerar perfil profissional
+        </button>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/triagem.js"></script>
+{% endblock %}

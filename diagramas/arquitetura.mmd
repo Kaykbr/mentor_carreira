@@ -1,0 +1,64 @@
+%% Diagrama de Arquitetura / Componentes - Mentor de Carreira
+%% v1.3 - 2026-07 - inclui admin, analise/curriculo por vaga, RAG e camadas data/prompts
+%% Camadas: Cliente -> FastAPI (middleware + routers) -> Services -> claude_client -> Anthropic
+%%          Services -> camada deterministica (data) | Services -> SQLAlchemy ORM -> SQLite
+flowchart TB
+    cliente["Navegador / Cliente HTTP<br/>(Jinja2 + HTMX + Alpine.js)"]
+
+    subgraph fastapi["FastAPI (app/main.py)"]
+        direction TB
+        mw["SessionMiddleware (cookie assinado)<br/>+ headers de seguranca"]
+        subgraph routers["Routers (app/routes)"]
+            direction TB
+            rJson["JSON: auth - students - triage - pdi -<br/>curriculum - admin"]
+            rHtml["HTML: paginas_web - perfil_web - pdi_web -<br/>curriculo_web - analise_vaga_web"]
+        end
+        infra["_deps.py (guards auth/admin)<br/>_web.py (templates + flash)"]
+    end
+
+    subgraph services["Services (app/services)"]
+        direction TB
+        sNeg["Negocio: auth - student - profile - pdi -<br/>curriculum - curriculum_vaga - analise_vaga - admin"]
+        sDet["Deterministicos: competencias - rag -<br/>curriculo_qualidade - contexto_aluno - texto - _base"]
+    end
+
+    subgraph dados["Conteudo estatico (app/data)"]
+        direction LR
+        dRec["recursos_aprendizado<br/>(corpus RAG)"]
+        dSin["sinonimos"]
+    end
+
+    subgraph prompts["Prompts + ferramentas (app/prompts)"]
+        direction LR
+        pr["triagem - perfil - pdi - curriculo -<br/>analise_vaga - recomendacoes_vaga - analise_curriculo"]
+    end
+
+    cc["claude_client<br/>singleton + retry (tenacity) + tool_use<br/>7 operacoes de IA"]
+    anthropic["Anthropic API<br/>claude-haiku-4-5 (configuravel:<br/>CLAUDE_MODEL / _ANALISE / _GERACAO)"]
+    orm["SQLAlchemy ORM (app/models.py)"]
+    db[("SQLite - mentor.db<br/>7 tabelas")]
+
+    cliente -->|HTTP| mw
+    mw --> rJson
+    mw --> rHtml
+    rJson --> infra
+    rHtml --> infra
+    rJson --> sNeg
+    rHtml --> sNeg
+    sNeg --> sDet
+    sDet --> dRec
+    sDet --> dSin
+    sNeg --> cc
+    cc --> pr
+    cc --> anthropic
+    sNeg --> orm
+    orm --> db
+
+    classDef infra fill:#e0e7ff,stroke:#3730a3;
+    classDef ext fill:#fef9c3,stroke:#a16207;
+    classDef store fill:#dcfce7,stroke:#15803d;
+    classDef data fill:#f1f5f9,stroke:#475569;
+    class mw,cc infra;
+    class anthropic ext;
+    class db,orm store;
+    class dRec,dSin,pr data;

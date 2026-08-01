@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block titulo %}Perfil · {{ aluno.nome }}{% endblock %}
+{% block tut_pagina %}perfil{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Perfil</span>
+        </nav>
+        <h1>Perfil de {{ aluno.nome }}</h1>
+        <p class="texto-muted" style="margin:0;">Gerado em {{ perfil.created_at.strftime('%d/%m/%Y às %H:%M') if perfil.created_at else '' }}</p>
+    </div>
+
+    <div style="display:flex; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;"
+         data-tut="1"
+         data-tut-titulo="Este perfil é seu — e é editável"
+         data-tut-texto="A IA montou um rascunho a partir da sua conversa na triagem. Revise e ajuste o que quiser: quanto mais fiel, melhores ficam o PDI e o currículo.">
+        <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/perfil/editar">✏️ Editar perfil</a>
+    </div>
+
+    {# Barra de completude (H1 — Visibilidade do estado) #}
+    <div class="completude-bar"
+         data-tut="2"
+         data-tut-titulo="Completude do perfil"
+         data-tut-texto="Mostra quantas seções já estão preenchidas. Campos vazios aparecem marcados nas seções abaixo; completá-los deixa os artefatos gerados bem mais precisos.">
+        <span style="white-space:nowrap; font-weight:600; color:#102a43;">Perfil</span>
+        <div class="progress-bar" style="height:8px; margin:0;">
+            <div class="progress-fill" style="width:{{ completude.pct }}%"></div>
+        </div>
+        <span class="completude-info">{{ completude.pct }}% ({{ completude.preenchidas }}/{{ completude.total }})</span>
+        {% if completude.pct < 100 %}
+        <a href="/alunos/{{ aluno.id }}/perfil/editar" style="font-size:.8rem; white-space:nowrap;">Completar →</a>
+        {% endif %}
+    </div>
+
+    {# Navegação por seções — sticky (H6 — Reconhecimento > Lembrança) #}
+    <nav class="perfil-nav" aria-label="Ir para seção" style="display:flex; flex-wrap:wrap; gap:0.4rem; font-size:0.875rem;">
+        <a href="#sec-conta" class="tag">👤 Conta</a>
+        <a href="#sec-resumo" class="tag">Resumo</a>
+        <a href="#sec-objetivo" class="tag">Objetivo</a>
+        <a href="#sec-experiencias" class="tag">Experiências</a>
+        <a href="#sec-stack" class="tag">Stack</a>
+        <a href="#sec-formacao" class="tag">Formação</a>
+        <a href="#sec-links" class="tag">Links</a>
+        {% if areas_afinidade %}<a href="#sec-areas" class="tag">🧭 Áreas</a>{% endif %}
+    </nav>
+
+    {# Dados da conta (H4 — Consistência: dados básicos visíveis aqui) #}
+    <div class="cartao" id="sec-conta">
+        <div class="secao-icone">
+            <span>👤</span>
+            <h3>Dados da conta</h3>
+            <a href="/alunos/{{ aluno.id }}/configuracoes"
+               class="botao-icone" style="margin-left:auto;" title="Editar dados da conta">✏️</a>
+        </div>
+        <p style="margin:.35rem 0 .2rem;"><strong>Nome:</strong> {{ aluno.nome }}</p>
+        <p style="margin:.2rem 0;"><strong>E-mail:</strong> {{ aluno.email }}</p>
+        <p style="margin:.2rem 0 0;"><strong>Curso:</strong> {{ aluno.curso }} · {{ aluno.periodo }}º período</p>
+    </div>
+
+    {# Resumo #}
+    <div class="cartao" id="sec-resumo"
+         data-tut="3"
+         data-tut-titulo="Resumo geral"
+         data-tut-texto="É a sua apresentação em 3 ou 4 linhas: quem você é hoje, o que já explorou e o que busca agora. Vai no cabeçalho do currículo. Se ainda não tem certeza da área, tudo bem: descreva o que te interessa e o que ainda quer descobrir. Clique no lápis para editar.">
+        <div class="secao-icone">
+            <span>📋</span>
+            <h3>Resumo geral</h3>
+            {% if not completude.secoes.resumo %}
+            <span class="badge badge-vazio" style="margin-left:.4rem;">! Vazio</span>
+            {% endif %}
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-resumo"
+               class="botao-icone" style="margin-left:auto;" title="Editar resumo">✏️</a>
+        </div>
+        {% if perfil_json.resumo_geral %}
+            <p style="margin:.35rem 0 0;">{{ perfil_json.resumo_geral }}</p>
+        {% else %}
+            <p class="texto-muted" style="margin:.35rem 0 0;">Não preenchido.
+                <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-resumo">Adicionar →</a>
+            </p>
+        {% endif %}
+    </div>
+
+    {# Objetivo #}
+    <div class="cartao" id="sec-objetivo"
+         data-tut="4"
+         data-tut-titulo="Objetivo de carreira"
+         data-tut-texto="Onde você quer chegar. Curto prazo é o que gostaria de conseguir nos próximos 6 a 12 meses (estágio, aprender uma tecnologia). Médio prazo é onde se vê em 2 ou 3 anos. Se ainda está explorando, escreva o que te atrai mais no momento; pode mudar depois.">
+        <div class="secao-icone">
+            <span>🎯</span>
+            <h3>Objetivo de carreira</h3>
+            {% if not completude.secoes.objetivo %}
+            <span class="badge badge-vazio" style="margin-left:.4rem;">! Vazio</span>
+            {% endif %}
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-objetivo"
+               class="botao-icone" style="margin-left:auto;" title="Editar objetivo">✏️</a>
+        </div>
+        <p><strong>Curto prazo:</strong> {{ perfil_json.objetivo_carreira.curto_prazo or "Não informado" }}</p>
+        <p><strong>Médio prazo:</strong> {{ perfil_json.objetivo_carreira.medio_prazo or "Não informado" }}</p>
+        {% if perfil_json.objetivo_carreira.areas_interesse %}
+            <p style="margin-bottom:0.4rem;"><strong>Áreas de interesse:</strong></p>
+            <div class="tags">
+                {% for area in perfil_json.objetivo_carreira.areas_interesse %}
+                    <span class="tag tag-verde">{{ area }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p><strong>Áreas de interesse:</strong> Não informado</p>
+        {% endif %}
+    </div>
+
+    {# Áreas que combinam com o perfil (sugeridas pela IA — possibilidades a explorar) #}
+    {% if areas_afinidade %}
+    <div class="cartao" id="sec-areas"
+         data-tut="5"
+         data-tut-titulo="Áreas que combinam com você"
+         data-tut-texto="Com base na sua triagem, o mentor sugere caminhos da tecnologia que conversam com o seu perfil. São possibilidades para explorar, não um veredito. Use como ponto de partida.">
+        <div class="secao-icone">
+            <span>🧭</span>
+            <h3>Áreas que combinam com seu perfil</h3>
+        </div>
+        <p class="texto-muted" style="margin:.1rem 0 1rem;">
+            Caminhos que fazem sentido para o seu desenvolvimento — pontos de partida para explorar, sem pressa de decidir.
+        </p>
+        {% for a in areas_afinidade %}
+        <div class="area-afinidade">
+            <p class="area-afinidade-nome">{{ a.area }}</p>
+            {% if a.porque %}<p class="area-afinidade-porque">{{ a.porque }}</p>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# Experiências #}
+    <div class="cartao" id="sec-experiencias"
+         data-tut="6"
+         data-tut-titulo="Experiências"
+         data-tut-texto="Aqui entra qualquer coisa concreta que você já construiu ou participou: trabalhos de faculdade que foram além do básico, projetos pessoais, freelas, estágios, monitorias. Vale citar mesmo os pequenos — o que aprendeu conta. Se ainda não teve experiência, pode deixar vazio, isso é totalmente normal no começo.">
+        <div class="secao-icone">
+            <span>💼</span>
+            <h3>Experiências</h3>
+            {% if not completude.secoes.experiencias %}
+            <span class="badge badge-vazio" style="margin-left:.4rem;">! Vazio</span>
+            {% endif %}
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-experiencias"
+               class="botao-icone" style="margin-left:auto;" title="Editar experiências">✏️</a>
+        </div>
+        {% if perfil_json.experiencias %}
+            {% for exp in perfil_json.experiencias %}
+                <div class="exp-card">
+                    <div class="exp-header">
+                        <span class="exp-titulo">{{ exp.titulo }}</span>
+                        <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap;">
+                            <span class="badge badge-tipo">{{ exp.tipo | replace('_', ' ') }}</span>
+                            <span class="exp-periodo">{{ exp.periodo }}</span>
+                        </div>
+                    </div>
+                    <p class="exp-descricao">{{ exp.descricao }}</p>
+                    {% if exp.resultados %}
+                        <p class="exp-resultados">📈 {{ exp.resultados }}</p>
+                    {% endif %}
+                    {% if exp.tecnologias %}
+                        <div class="tags">
+                            {% for tech in exp.tecnologias %}
+                                <span class="tag">{{ tech }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="texto-muted">Nenhuma experiência registrada.
+                <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-experiencias">Adicionar →</a>
+            </p>
+        {% endif %}
+    </div>
+
+    {# Stack técnica #}
+    <div class="cartao" id="sec-stack"
+         data-tut="7"
+         data-tut-titulo="Stack técnica"
+         data-tut-texto="As linguagens, frameworks e ferramentas que você já mexeu, mesmo em nível básico. Coloque só o que realmente usou. Se sabe SQL básico, escreva SQL, não invente PostgreSQL ou SQL Server. O nível técnico geral é sua auto-avaliação honesta: iniciante é totalmente aceitável e não é ponto negativo.">
+        <div class="secao-icone">
+            <span>⚙️</span>
+            <h3>Stack técnica</h3>
+            {% if not completude.secoes.stack %}
+            <span class="badge badge-vazio" style="margin-left:.4rem;">! Vazio</span>
+            {% endif %}
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-stack"
+               class="botao-icone" style="margin-left:auto;" title="Editar stack">✏️</a>
+        </div>
+        {% set _niveis = {"basico":"Básico","intermediario":"Intermediário","avancado":"Avançado"} %}
+        {% if perfil_json.stack_tecnica.linguagens %}
+            <p style="margin-bottom:0.3rem;"><strong>Linguagens:</strong></p>
+            <div class="tags" style="margin-bottom:0.75rem;">
+                {% for lang in perfil_json.stack_tecnica.linguagens %}
+                    <span class="tag tag-stack">{{ lang.nome }}{% if lang.nivel %} <span class="tag-nivel tag-nivel-{{ lang.nivel }}">{{ _niveis[lang.nivel] }}</span>{% endif %}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if perfil_json.stack_tecnica.frameworks_ferramentas %}
+            <p style="margin-bottom:0.3rem;"><strong>Frameworks e ferramentas:</strong></p>
+            <div class="tags" style="margin-bottom:0.75rem;">
+                {% for fw in perfil_json.stack_tecnica.frameworks_ferramentas %}
+                    <span class="tag tag-stack">{{ fw.nome }}{% if fw.nivel %} <span class="tag-nivel tag-nivel-{{ fw.nivel }}">{{ _niveis[fw.nivel] }}</span>{% endif %}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if not completude.secoes.stack %}
+            <p class="texto-muted" style="margin-top:.5rem;">
+                <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-stack">Adicionar linguagens e ferramentas →</a>
+            </p>
+        {% endif %}
+    </div>
+
+    {# Formação #}
+    <div class="cartao" id="sec-formacao"
+         data-tut="8"
+         data-tut-titulo="Formação"
+         data-tut-texto="Nome da sua instituição, previsão de conclusão do curso e destaques acadêmicos (bolsas, monitoria, TCC, matérias em que se destacou). Se não sabe a previsão exata, deixe vazio ou escreva ‘em andamento’. Curso e período são editados em Configurações da conta.">
+        <div class="secao-icone">
+            <span>🎓</span>
+            <h3>Formação</h3>
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-formacao"
+               class="botao-icone" style="margin-left:auto;" title="Editar formação">✏️</a>
+        </div>
+        <p><strong>Curso:</strong> {{ aluno.curso }} — {{ aluno.periodo }}º período</p>
+        {% if perfil_json.formacao.instituicao %}
+            <p><strong>Instituição:</strong> {{ perfil_json.formacao.instituicao }}</p>
+        {% endif %}
+        {% if perfil_json.formacao.previsao_conclusao %}
+            <p><strong>Previsão de conclusão:</strong> {{ perfil_json.formacao.previsao_conclusao }}</p>
+        {% endif %}
+        {% if perfil_json.formacao.destaques_academicos %}
+            <p style="margin-bottom:0.35rem;"><strong>Destaques acadêmicos:</strong></p>
+            <ul style="margin:0;">
+                {% for destaque in perfil_json.formacao.destaques_academicos %}
+                    <li>{{ destaque }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+
+    {# Links #}
+    <div class="cartao" id="sec-links"
+         data-tut="9"
+         data-tut-titulo="Links públicos"
+         data-tut-texto="Links onde recrutadores podem ver o seu trabalho: GitHub, LinkedIn, portfólio. Deixe vazio o que ainda não tem, é totalmente normal para quem está começando. Escreva sem ‘https://’ (ex.: github.com/seu-usuario).">
+        <div class="secao-icone">
+            <span aria-hidden="true">🔗</span>
+            <h3>Links</h3>
+            {% if not completude.secoes.links %}
+            <span class="badge badge-vazio" style="margin-left:.4rem;">! Vazio</span>
+            {% endif %}
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-links"
+               class="botao-icone" style="margin-left:auto;" title="Editar links">✏️</a>
+        </div>
+        {% if perfil_json.links.github or perfil_json.links.linkedin or perfil_json.links.portfolio or perfil_json.links.outro %}
+            <ul style="margin:0;">
+                {% if perfil_json.links.github %}
+                    <li><strong>GitHub:</strong>
+                        <a href="https://{{ perfil_json.links.github }}" target="_blank" rel="noopener">{{ perfil_json.links.github }}</a>
+                    </li>
+                {% endif %}
+                {% if perfil_json.links.linkedin %}
+                    <li><strong>LinkedIn:</strong>
+                        <a href="https://{{ perfil_json.links.linkedin }}" target="_blank" rel="noopener">{{ perfil_json.links.linkedin }}</a>
+                    </li>
+                {% endif %}
+                {% if perfil_json.links.portfolio %}
+                    <li><strong>Portfólio:</strong>
+                        <a href="https://{{ perfil_json.links.portfolio }}" target="_blank" rel="noopener">{{ perfil_json.links.portfolio }}</a>
+                    </li>
+                {% endif %}
+                {% if perfil_json.links.outro %}
+                    <li><strong>Outro:</strong>
+                        <a href="https://{{ perfil_json.links.outro }}" target="_blank" rel="noopener">{{ perfil_json.links.outro }}</a>
+                    </li>
+                {% endif %}
+            </ul>
+        {% else %}
+            <p class="texto-muted">Nenhum link cadastrado.
+                <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-links">Adicionar →</a>
+            </p>
+        {% endif %}
+    </div>
+
+    {# Certificações #}
+    <div class="cartao"
+         data-tut="10"
+         data-tut-titulo="Certificações"
+         data-tut-texto="Cursos que você concluiu, mesmo os gratuitos. Coloque o nome exato, a instituição/plataforma (ex.: Coursera, Alura) e o ano em que fez. Se não tem nenhuma ainda, pode deixar vazio — muita gente começa assim. E se não lembrar o ano, deixe em branco, não invente.">
+        <div class="secao-icone">
+            <span>🏅</span>
+            <h3>Certificações</h3>
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-certificacoes"
+               class="botao-icone" style="margin-left:auto;" title="Editar certificações">✏️</a>
+        </div>
+        {% if perfil_json.certificacoes %}
+            <ul style="margin:0;">
+                {% for cert in perfil_json.certificacoes %}
+                    <li>
+                        <strong>{{ cert.nome }}</strong>{% if cert.instituicao %} — {{ cert.instituicao }}{% endif %}{% if cert.ano %} ({{ cert.ano }}){% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="texto-muted">Nenhuma certificação registrada.</p>
+        {% endif %}
+    </div>
+
+    {# Soft skills #}
+    <div class="cartao"
+         data-tut="11"
+         data-tut-titulo="Soft skills"
+         data-tut-texto="Habilidades pessoais e de relacionamento que você percebe em si (comunicação, trabalho em equipe, organização, curiosidade). Uma por linha, ao editar. Pense em situações reais em que essas qualidades apareceram — isso ajuda a lembrar quais são as suas.">
+        <div class="secao-icone">
+            <span>🤝</span>
+            <h3>Soft skills</h3>
+            {% if not completude.secoes.soft_skills %}
+            <span class="badge badge-vazio" style="margin-left:.4rem;">! Vazio</span>
+            {% endif %}
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-soft"
+               class="botao-icone" style="margin-left:auto;" title="Editar soft skills">✏️</a>
+        </div>
+        {% if perfil_json.soft_skills %}
+            <div class="tags" style="margin-top:0.25rem;">
+                {% for skill in perfil_json.soft_skills %}
+                    <span class="tag tag-verde">{{ skill }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="texto-muted">Não informado.</p>
+        {% endif %}
+    </div>
+
+    {# Restrições #}
+    <div class="cartao"
+         data-tut="12"
+         data-tut-titulo="Disponibilidade e restrições"
+         data-tut-texto="Informações que ajudam a filtrar oportunidades realistas: quantas horas por semana dá pra dedicar, onde você mora, se prefere remoto/híbrido/presencial e restrições próprias (só à tarde, PCD, indisponível em algum período). Se não souber algum campo agora, pode deixar em branco.">
+        <div class="secao-icone">
+            <span>📍</span>
+            <h3>Disponibilidade e restrições</h3>
+            <a href="/alunos/{{ aluno.id }}/perfil/editar?abrir=sec-restricoes"
+               class="botao-icone" style="margin-left:auto;" title="Editar disponibilidade">✏️</a>
+        </div>
+        <p><strong>Carga horária disponível:</strong> {{ perfil_json.restricoes.carga_horaria_disponivel or "Não informado" }}</p>
+        <p><strong>Localização:</strong> {{ perfil_json.restricoes.localizacao or "Não informado" }}</p>
+        <p><strong>Modalidade preferida:</strong> {{ perfil_json.restricoes.modalidade_preferida or "Não informado" }}</p>
+        {% if perfil_json.restricoes.outras %}
+            <p style="margin:0;"><strong>Outras restrições:</strong> {{ perfil_json.restricoes.outras }}</p>
+        {% endif %}
+    </div>
+
+    <div class="acoes"
+         data-tut="13"
+         data-tut-titulo="Próximo passo"
+         data-tut-texto="Com o perfil revisado, siga para o PDI: o plano com metas, competências a desenvolver e um quadro de ações para acompanhar. Você pode voltar aqui e ajustar o perfil sempre que quiser; as gerações usam a versão mais recente.">
+        <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}">← Voltar ao painel</a>
+        <a class="botao" href="/alunos/{{ aluno.id }}/pdi">Continuar para o PDI →</a>
+    </div>
+
+    {# Passo final: aponta o botão flutuante "?" para reabrir o tutorial. #}
+    <div id="tut-ajuda-marker" aria-hidden="true"
+         data-tut="99"
+         data-tut-titulo="Precisa rever o tutorial?"
+         data-tut-texto="Sempre que quiser rever esta explicação, clique no botão flutuante com o símbolo ? no canto inferior direito. Ele reabre este tour do começo."
+         style="position:fixed; right:1rem; bottom:1rem; width:44px; height:44px; pointer-events:none; opacity:0;"></div>
+{% endblock %}
+

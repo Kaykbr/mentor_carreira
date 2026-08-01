@@ -1,0 +1,39 @@
+%% Diagrama de Sequencia - Analise de Vaga (JD Analyzer) - NOVO na v1.2
+%% v1.2 - 2026-06 - 5a operacao de IA (extrair_requisitos_vaga) + matching deterministico + RAG.
+%% A IA so EXTRAI os requisitos da vaga; a comparacao com o perfil e o score sao deterministicos.
+sequenceDiagram
+    autonumber
+    actor Aluno
+    participant Rt as analise_vaga_web.py
+    participant Guard as verificar_proprio_aluno_html
+    participant AVS as analise_vaga_service
+    participant PS as profile_service
+    participant PdiS as pdi_service
+    participant CMP as competencias
+    participant RAG as rag_service
+    participant CC as claude_client
+    participant API as Anthropic API
+    participant DB as SQLite
+
+    note over Aluno,DB: Analisar vaga (POST /alunos/{id}/analise-vaga)
+    Aluno->>Rt: cola o texto da vaga (jd_text)
+    Rt->>Guard: sessao + dono do {id}?
+    Guard-->>Rt: ok (senao -> /login ou 403)
+    Rt->>AVS: analisar(id, jd_text)
+    AVS->>PS: obter_perfil(id)
+    PS->>DB: SELECT student_profiles
+    alt sem perfil
+        AVS-->>Rt: ValueError -> flash + redirect
+    else tem perfil
+        AVS->>PdiS: obter_pdi(id) (competencias_a_desenvolver)
+        AVS->>CC: extrair_requisitos_vaga(jd_text)
+        CC->>API: messages.create (tool_use forcado: salvar_requisitos)
+        API-->>CC: requisitos (cargo, nivel, tecnicas[], soft_skills[], diferenciais[])
+        CC-->>AVS: requisitos
+        AVS->>CMP: presente(req, pools do perfil/PDI)
+        CMP-->>AVS: possui / em_desenvolvimento / lacuna + score (%)
+        AVS->>RAG: recuperar_recursos(lacunas)
+        RAG-->>AVS: recursos de estudo (corpus estatico)
+        AVS-->>Rt: resultado (score, categorias, recursos)
+        Rt-->>Aluno: 200 analise_vaga.html (resultado)
+    end

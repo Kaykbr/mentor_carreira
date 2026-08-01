@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block titulo %}Editar perfil · {{ aluno.nome }}{% endblock %}
+
+{# ---- Macros reutilizados pelos itens existentes e pelo <template> de novo item ---- #}
+{% macro opcoes(valores, atual) %}
+    {%- for v, rotulo in valores %}<option value="{{ v }}"{% if v == atual %} selected{% endif %}>{{ rotulo }}</option>{% endfor -%}
+{% endmacro %}
+
+{% macro bloco_experiencia(exp) %}
+<div class="repeat-item">
+    <div class="campo-linha">
+        <label>Tipo
+            <select name="exp_tipo">{{ opcoes([("estagio","Estágio"),("freela","Freela"),("projeto_pessoal","Projeto pessoal"),("projeto_academico","Projeto acadêmico"),("voluntariado","Voluntariado")], exp.tipo) }}</select>
+        </label>
+        <label>Período
+            <input type="text" name="exp_periodo" value="{{ exp.periodo }}" placeholder="ex.: 2024-2025">
+        </label>
+    </div>
+    <label>Título
+        <input type="text" name="exp_titulo" value="{{ exp.titulo }}" placeholder="ex.: API de tarefas">
+    </label>
+    <label>Descrição
+        <textarea name="exp_descricao" rows="2" placeholder="O que você fez, resultados…">{{ exp.descricao }}</textarea>
+    </label>
+    <label>Resultados / impacto (opcional)
+        <textarea name="exp_resultados" rows="2" placeholder="ex.: usado por 10 colegas, reduziu o tempo de cadastro em 30%">{{ exp.resultados }}</textarea>
+    </label>
+    <label>Tecnologias (separadas por vírgula)
+        <input type="text" name="exp_tecnologias" value="{{ exp.tecnologias | join(', ') }}" placeholder="Python, FastAPI, SQLite">
+    </label>
+    <button type="button" class="botao-secundario botao-perigo repeat-remover"
+            data-confirm="Remover esta experiência? A remoção só é salva ao clicar em Salvar.">Remover experiência</button>
+</div>
+{% endmacro %}
+
+{% macro bloco_stack_item(item, tipo) %}
+{# tipo = 'lang' ou 'fw' — controla os names do form (paralelos: *_nome[], *_nivel[]) #}
+<div class="repeat-item repeat-item-inline">
+    <div class="stack-item-linha">
+        <label class="stack-nome">
+            <span class="stack-label">{{ 'Linguagem' if tipo == 'lang' else 'Ferramenta / framework' }}</span>
+            <input type="text" name="stack_{{ tipo }}_nome" value="{{ item.nome }}"
+                   placeholder="{{ 'ex.: Python' if tipo == 'lang' else 'ex.: FastAPI' }}">
+        </label>
+        <label class="stack-nivel">
+            <span class="stack-label">Nível</span>
+            <select name="stack_{{ tipo }}_nivel">{{ opcoes([
+                ("", "— sem indicar —"),
+                ("basico", "Básico"),
+                ("intermediario", "Intermediário"),
+                ("avancado", "Avançado"),
+            ], item.nivel or "") }}</select>
+        </label>
+        <button type="button" class="botao-perigo botao-icone repeat-remover"
+                data-confirm="Remover este item? A remoção só é salva ao clicar em Salvar."
+                title="Remover" aria-label="Remover item">✕</button>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro bloco_certificacao(cert) %}
+<div class="repeat-item">
+    <label>Nome da certificação
+        <input type="text" name="cert_nome" value="{{ cert.nome }}" placeholder="ex.: Python para Data Science">
+    </label>
+    <div class="campo-linha">
+        <label>Instituição/plataforma
+            <input type="text" name="cert_instituicao" value="{{ cert.instituicao }}" placeholder="ex.: Coursera">
+        </label>
+        <label>Ano
+            <input type="text" name="cert_ano" value="{{ cert.ano }}" placeholder="ex.: 2025">
+        </label>
+    </div>
+    <button type="button" class="botao-secundario botao-perigo repeat-remover"
+            data-confirm="Remover esta certificação? A remoção só é salva ao clicar em Salvar.">Remover certificação</button>
+</div>
+{% endmacro %}
+
+{% block conteudo %}
+    {% set exp_vazia = {"tipo": "projeto_pessoal", "titulo": "", "descricao": "", "periodo": "", "tecnologias": [], "resultados": ""} %}
+    {% set cert_vazia = {"nome": "", "instituicao": "", "ano": ""} %}
+    {% set stack_vazio = {"nome": "", "nivel": ""} %}
+
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <a href="/alunos/{{ aluno.id }}/perfil">Perfil</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Editar</span>
+        </nav>
+        <h1>Editar perfil</h1>
+        <p class="texto-muted" style="margin:0;">Ajuste qualquer informação. As mudanças são salvas ao clicar em "Salvar perfil".</p>
+    </div>
+
+    {% if erro %}<p class="erro" role="alert" style="margin-bottom:1rem;">{{ erro }}</p>{% endif %}
+
+    <form method="post" action="/alunos/{{ aluno.id }}/perfil/editar" class="form-edicao" data-loading="Salvando…">
+
+        {# --- Resumo --- #}
+        <details class="secao-form" id="sec-resumo" open>
+            <summary class="secao-form-titulo">
+                <span>📋</span>
+                <span>Resumo geral</span>
+                {% if not perfil_json.resumo_geral %}
+                <span class="badge badge-vazio" style="margin-left:.3rem;">! Vazio</span>
+                {% else %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">✓</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> uma apresentação curta de você em 3 ou 4 linhas.
+                    Diga em qual momento do curso está, o que já explorou e o que busca agora. Se ainda não tem certeza
+                    da área, tudo bem dizer isso: escreva o que te interessa e o que ainda quer descobrir.
+                    <span class="exemplo">Exemplo: “Estudante no 7º semestre de Sistemas de Informação, com foco em back-end.
+                    Já construí uma API em Python/FastAPI para um trabalho da faculdade e busco meu primeiro estágio
+                    para aprofundar em bancos de dados e cloud.”</span>
+                </p>
+                <label>Resumo profissional
+                    <span class="dica" title="Usado no cabeçalho do currículo gerado pela IA.">?</span>
+                    <textarea id="resumo_geral" name="resumo_geral" rows="4" maxlength="4000"
+                              placeholder="Um parágrafo sobre quem você é, o que busca e suas principais habilidades…">{{ perfil_json.resumo_geral }}</textarea>
+                    <span class="char-count" data-for="resumo_geral"></span>
+                </label>
+            </div>
+        </details>
+
+        {# --- Objetivo --- #}
+        <details class="secao-form" id="sec-objetivo">
+            <summary class="secao-form-titulo">
+                <span>🎯</span>
+                <span>Objetivo de carreira</span>
+                {% set obj = perfil_json.objetivo_carreira %}
+                {% if not (obj.curto_prazo or obj.medio_prazo) %}
+                <span class="badge badge-vazio" style="margin-left:.3rem;">! Vazio</span>
+                {% else %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">✓</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> onde você quer chegar. Curto prazo é aquilo que gostaria
+                    de conseguir nos próximos 6 a 12 meses (ex.: estágio, primeira vaga, aprender uma tecnologia).
+                    Médio prazo é onde se vê em 2 a 3 anos. Se ainda está explorando, cite as áreas que mais te chamaram.
+                    <span class="exemplo">Exemplo (curto): “Conseguir meu primeiro estágio em back-end até o fim de 2026.”</span>
+                </p>
+                <label>Curto prazo
+                    <input type="text" name="objetivo_curto" maxlength="2000"
+                           value="{{ perfil_json.objetivo_carreira.curto_prazo }}"
+                           placeholder="ex.: Conquistar meu primeiro estágio em desenvolvimento back-end">
+                </label>
+                <label>Médio prazo
+                    <input type="text" name="objetivo_medio" maxlength="2000"
+                           value="{{ perfil_json.objetivo_carreira.medio_prazo }}"
+                           placeholder="ex.: Trabalhar como desenvolvedor júnior em uma startup de tecnologia">
+                </label>
+                <label>Áreas de interesse (uma por linha)
+                    <textarea id="areas_interesse" name="areas_interesse" rows="3" maxlength="2000"
+                              placeholder="ex.: Backend&#10;Cloud&#10;Inteligência Artificial">{{ perfil_json.objetivo_carreira.areas_interesse | join('\n') }}</textarea>
+                    <span class="char-count" data-for="areas_interesse"></span>
+                </label>
+            </div>
+        </details>
+
+        {# --- Experiências --- #}
+        <details class="secao-form" id="sec-experiencias">
+            <summary class="secao-form-titulo">
+                <span>💼</span>
+                <span>Experiências</span>
+                {% if not perfil_json.experiencias %}
+                <span class="badge badge-vazio" style="margin-left:.3rem;">! Vazio</span>
+                {% else %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">{{ perfil_json.experiencias | length }} item{{ 's' if perfil_json.experiencias | length > 1 else '' }}</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> qualquer coisa concreta que você já construiu ou participou:
+                    trabalhos de faculdade que foram além do básico, projetos pessoais, freelas, estágios ou monitorias.
+                    Vale muito citar o que aprendeu, mesmo em algo pequeno. Se ainda não teve experiência, pode deixar vazio.
+                    <span class="exemplo">Exemplo: título “API de tarefas”, descrição “Sistema em FastAPI e SQLite para
+                    organizar tarefas semanais, com autenticação por token.”</span>
+                </p>
+                <div class="repeat-lista" id="exp-lista">
+                    {% for exp in perfil_json.experiencias %}{{ bloco_experiencia(exp) }}{% endfor %}
+                </div>
+                <button type="button" class="botao-secundario" data-add="exp-template" data-lista="exp-lista">+ Adicionar experiência</button>
+                <template id="exp-template">{{ bloco_experiencia(exp_vazia) }}</template>
+            </div>
+        </details>
+
+        {# --- Stack técnica --- #}
+        <details class="secao-form" id="sec-stack">
+            <summary class="secao-form-titulo">
+                <span>⚙️</span>
+                <span>Stack técnica</span>
+                {% set st = perfil_json.stack_tecnica %}
+                {% if not (st.linguagens or st.frameworks_ferramentas) %}
+                <span class="badge badge-vazio" style="margin-left:.3rem;">! Vazio</span>
+                {% else %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">✓</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> só o que você realmente já mexeu.
+                    Adicione uma linha por tecnologia com o seu nível nela: <em>Básico</em> (mexeu pouco, ainda aprendendo),
+                    <em>Intermediário</em> (usou em algum projeto real) ou <em>Avançado</em> (usa com autonomia). Se não quiser
+                    indicar um nível agora, deixe em “sem indicar”. Não invente produtos: se sabe SQL básico, escreva SQL,
+                    não PostgreSQL ou SQL Server.
+                    <span class="exemplo">Exemplo — Python (Intermediário), JavaScript (Básico), SQL (Básico).</span>
+                </p>
+
+                <div class="stack-grupo">
+                    <h4 class="stack-grupo-titulo">Linguagens</h4>
+                    <div class="repeat-lista" id="stack-lang-lista">
+                        {% for item in perfil_json.stack_tecnica.linguagens %}{{ bloco_stack_item(item, 'lang') }}{% endfor %}
+                    </div>
+                    <button type="button" class="botao-secundario" data-add="stack-lang-template" data-lista="stack-lang-lista">+ Adicionar linguagem</button>
+                    <template id="stack-lang-template">{{ bloco_stack_item(stack_vazio, 'lang') }}</template>
+                </div>
+
+                <div class="stack-grupo">
+                    <h4 class="stack-grupo-titulo">Frameworks e ferramentas</h4>
+                    <div class="repeat-lista" id="stack-fw-lista">
+                        {% for item in perfil_json.stack_tecnica.frameworks_ferramentas %}{{ bloco_stack_item(item, 'fw') }}{% endfor %}
+                    </div>
+                    <button type="button" class="botao-secundario" data-add="stack-fw-template" data-lista="stack-fw-lista">+ Adicionar ferramenta</button>
+                    <template id="stack-fw-template">{{ bloco_stack_item(stack_vazio, 'fw') }}</template>
+                </div>
+            </div>
+        </details>
+
+        {# --- Formação --- #}
+        <details class="secao-form" id="sec-formacao">
+            <summary class="secao-form-titulo">
+                <span>🎓</span>
+                <span>Formação</span>
+                {% if perfil_json.formacao.instituicao or perfil_json.formacao.destaques_academicos %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">✓</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="texto-muted" style="margin:0; font-size:.85rem;">
+                    Curso e período são editáveis em
+                    <a href="/alunos/{{ aluno.id }}/configuracoes">Configurações da conta</a>.
+                    Os campos abaixo são complementares.
+                </p>
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> nome da sua instituição, quando previsão de conclusão do curso,
+                    e destaques acadêmicos relevantes (bolsas, monitoria, disciplinas em que se destacou, TCC etc.).
+                    Se ainda não sabe a previsão exata, pode deixar em branco ou escrever “em andamento”.
+                    <span class="exemplo">Exemplo: instituição “IFCE campus Fortaleza”, previsão “dezembro de 2027”,
+                    destaque “Monitor de Programação Orientada a Objetos em 2026”.</span>
+                </p>
+                <label>Instituição de ensino
+                    <input type="text" name="formacao_instituicao" maxlength="300"
+                           value="{{ perfil_json.formacao.instituicao }}" placeholder="ex.: Universidade XYZ">
+                </label>
+                <label>Previsão de conclusão
+                    <input type="text" name="formacao_previsao" maxlength="100"
+                           value="{{ perfil_json.formacao.previsao_conclusao }}" placeholder="ex.: dezembro de 2026">
+                </label>
+                <label>Destaques acadêmicos (um por linha)
+                    <textarea id="formacao_destaques" name="formacao_destaques" rows="3" maxlength="2000"
+                              placeholder="ex.: Bolsista de iniciação científica&#10;Representante de turma">{{ perfil_json.formacao.destaques_academicos | join('\n') }}</textarea>
+                    <span class="char-count" data-for="formacao_destaques"></span>
+                </label>
+            </div>
+        </details>
+
+        {# --- Links --- #}
+        <details class="secao-form" id="sec-links">
+            <summary class="secao-form-titulo">
+                <span>🔗</span>
+                <span>Links públicos</span>
+                {% set lk = perfil_json.links %}
+                {% if not (lk.github or lk.linkedin or lk.portfolio) %}
+                <span class="badge badge-vazio" style="margin-left:.3rem;">! Vazio</span>
+                {% else %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">✓</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> links públicos onde recrutadores possam ver o seu trabalho.
+                    Deixe vazio o que ainda não tem, é normal para quem está começando. Escreva sem “https://”.
+                    <span class="exemplo">Exemplo — GitHub: github.com/kayky-brito.
+                    LinkedIn: linkedin.com/in/kayky-brito.</span>
+                </p>
+                <label>GitHub
+                    <span class="dica" title="Apenas o caminho, sem https://. Ex.: github.com/seu-usuario">?</span>
+                    <input type="text" name="link_github" maxlength="300"
+                           value="{{ perfil_json.links.github }}" placeholder="github.com/seu-usuario">
+                </label>
+                <label>LinkedIn
+                    <input type="text" name="link_linkedin" maxlength="300"
+                           value="{{ perfil_json.links.linkedin }}" placeholder="linkedin.com/in/seu-usuario">
+                </label>
+                <label>Portfólio
+                    <input type="text" name="link_portfolio" maxlength="300"
+                           value="{{ perfil_json.links.portfolio }}" placeholder="seuportfolio.com">
+                </label>
+                <label>Outro
+                    <input type="text" name="link_outro" maxlength="300"
+                           value="{{ perfil_json.links.outro }}" placeholder="ex.: behance.net/seu-usuario">
+                </label>
+            </div>
+        </details>
+
+        {# --- Certificações --- #}
+        <details class="secao-form" id="sec-certificacoes">
+            <summary class="secao-form-titulo">
+                <span>🏅</span>
+                <span>Certificações</span>
+                {% if perfil_json.certificacoes %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">{{ perfil_json.certificacoes | length }}</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> cursos que você concluiu (mesmo gratuitos), com nome exato,
+                    instituição/plataforma e ano em que fez. Se ainda não tem nenhum, pode deixar vazio;
+                    não invente um ano se não lembrar.
+                    <span class="exemplo">Exemplo: “Introdução a Python” — Curso em Vídeo — 2025.</span>
+                </p>
+                <div class="repeat-lista" id="cert-lista">
+                    {% for cert in perfil_json.certificacoes %}{{ bloco_certificacao(cert) }}{% endfor %}
+                </div>
+                <button type="button" class="botao-secundario" data-add="cert-template" data-lista="cert-lista">+ Adicionar certificação</button>
+                <template id="cert-template">{{ bloco_certificacao(cert_vazia) }}</template>
+            </div>
+        </details>
+
+        {# --- Soft skills --- #}
+        <details class="secao-form" id="sec-soft">
+            <summary class="secao-form-titulo">
+                <span>🤝</span>
+                <span>Soft skills</span>
+                {% if not perfil_json.soft_skills %}
+                <span class="badge badge-vazio" style="margin-left:.3rem;">! Vazio</span>
+                {% else %}
+                <span class="badge badge-ok" style="margin-left:.3rem;">✓</span>
+                {% endif %}
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> habilidades pessoais e de relacionamento que você percebe em si,
+                    de preferência com uma situação real por trás (não precisa escrever a situação aqui, mas pense nela para
+                    ter certeza). Uma por linha.
+                    <span class="exemplo">Exemplo: Comunicação, Trabalho em equipe, Organização, Curiosidade para aprender.</span>
+                </p>
+                <label>Uma por linha
+                    <span class="dica" title="Ex.: Comunicação, trabalho em equipe, proatividade.">?</span>
+                    <textarea id="soft_skills" name="soft_skills" rows="4" maxlength="2000"
+                              placeholder="ex.: Comunicação&#10;Trabalho em equipe&#10;Resolução de problemas">{{ perfil_json.soft_skills | join('\n') }}</textarea>
+                    <span class="char-count" data-for="soft_skills"></span>
+                </label>
+            </div>
+        </details>
+
+        {# --- Disponibilidade --- #}
+        <details class="secao-form" id="sec-restricoes">
+            <summary class="secao-form-titulo">
+                <span>📍</span>
+                <span>Disponibilidade e restrições</span>
+                <span class="secao-form-chevron">▾</span>
+            </summary>
+            <div class="secao-form-corpo">
+                <p class="dica-caixa">
+                    <strong>O que colocar aqui:</strong> informações que ajudam a filtrar oportunidades realistas para você:
+                    quantas horas por semana dá para dedicar, onde mora, se pode ou prefere remoto/híbrido/presencial,
+                    e restrições próprias (ex.: só à tarde, PCD, indisponível em determinado período).
+                    <span class="exemplo">Exemplo — carga: “20h por semana”, local: “Fortaleza/CE”, modalidade: “remoto ou híbrido”.</span>
+                </p>
+                <label>Carga horária disponível
+                    <input type="text" name="restricoes_carga" maxlength="300"
+                           value="{{ perfil_json.restricoes.carga_horaria_disponivel }}"
+                           placeholder="ex.: 20 horas por semana">
+                </label>
+                <label>Localização
+                    <input type="text" name="restricoes_local" maxlength="300"
+                           value="{{ perfil_json.restricoes.localizacao }}"
+                           placeholder="ex.: São Paulo - SP">
+                </label>
+                <label>Modalidade preferida
+                    <select name="restricoes_modalidade">{{ opcoes([("presencial","Presencial"),("remoto","Remoto"),("hibrido","Híbrido"),("indiferente","Indiferente")], perfil_json.restricoes.modalidade_preferida) }}</select>
+                </label>
+                <label>Outras restrições
+                    <textarea name="restricoes_outras" rows="2"
+                              placeholder="Restrições de horário, localização ou outras informações relevantes">{{ perfil_json.restricoes.outras }}</textarea>
+                </label>
+            </div>
+        </details>
+
+        {# Ações sticky (H4 — consistência, H3 — controle) #}
+        <div class="form-acoes-sticky">
+            <a class="botao botao-perigo" href="/alunos/{{ aluno.id }}/perfil">✕ Cancelar</a>
+            <button type="submit" class="botao">💾 Salvar perfil</button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/editor.js"></script>
+{% endblock %}

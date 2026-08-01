@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block titulo %}Editar PDI · {{ aluno.nome }}{% endblock %}
+
+{% macro bloco_competencia(comp) %}
+<div class="repeat-item">
+    <label>Competência
+        <input type="text" name="comp_nome" value="{{ comp.nome }}" placeholder="ex.: Testes automatizados">
+    </label>
+    <label>Por que desenvolver
+        <input type="text" name="comp_motivo" value="{{ comp.motivo }}" placeholder="ex.: Aumentar a confiança no código">
+    </label>
+    <button type="button" class="botao-secundario botao-perigo repeat-remover"
+            data-confirm="Remover esta competência? A remoção só é salva ao clicar em Salvar.">Remover competência</button>
+</div>
+{% endmacro %}
+
+{% macro bloco_cronograma(bloco) %}
+<div class="repeat-item">
+    <div class="campo-linha">
+        <label>Período
+            <input type="text" name="cron_periodo" value="{{ bloco.periodo }}" placeholder="ex.: 0-3 meses">
+        </label>
+        <label>Foco
+            <input type="text" name="cron_foco" value="{{ bloco.foco }}" placeholder="ex.: Consolidação técnica">
+        </label>
+    </div>
+    <label>Atividades (uma por linha)
+        <textarea name="cron_atividades" rows="3">{{ bloco.atividades | join('\n') }}</textarea>
+    </label>
+    <button type="button" class="botao-secundario botao-perigo repeat-remover"
+            data-confirm="Remover este bloco do cronograma? A remoção só é salva ao clicar em Salvar.">Remover bloco</button>
+</div>
+{% endmacro %}
+
+{% block conteudo %}
+    {% set comp_vazia = {"nome": "", "motivo": ""} %}
+    {% set cron_vazio = {"periodo": "", "foco": "", "atividades": []} %}
+
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <a href="/alunos/{{ aluno.id }}/pdi">PDI</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Editar</span>
+        </nav>
+        <h1>Editar PDI</h1>
+        <p class="texto-muted" style="margin:0;">Ajuste o objetivo, as metas, as competências e o cronograma. As ações do quadro são editadas no próprio quadro.</p>
+    </div>
+
+    {% if erro %}<p class="erro" role="alert">{{ erro }}</p>{% endif %}
+
+    <form method="post" action="/alunos/{{ aluno.id }}/pdi/editar" class="form-edicao" data-loading="Salvando…">
+
+        <div class="cartao">
+            <div class="secao-icone"><span>🎯</span><h3>Objetivo geral</h3></div>
+            <textarea name="objetivo_geral" rows="2" placeholder="Onde você quer chegar">{{ pdi_json.objetivo_geral }}</textarea>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:1rem; margin-bottom:1rem;">
+            <div class="cartao" style="margin-bottom:0;">
+                <div class="secao-icone"><span>🏃</span><h3>Metas de curto prazo</h3></div>
+                <label>Uma por linha
+                    <textarea name="metas_curto" rows="4">{{ pdi_json.metas_curto_prazo | join('\n') }}</textarea>
+                </label>
+            </div>
+            <div class="cartao" style="margin-bottom:0;">
+                <div class="secao-icone"><span>🚀</span><h3>Metas de médio prazo</h3></div>
+                <label>Uma por linha
+                    <textarea name="metas_medio" rows="4">{{ pdi_json.metas_medio_prazo | join('\n') }}</textarea>
+                </label>
+            </div>
+        </div>
+
+        <div class="cartao">
+            <div class="secao-icone"><span>💡</span><h3>Competências a desenvolver</h3></div>
+            <div class="repeat-lista" id="comp-lista">
+                {% for comp in pdi_json.competencias_a_desenvolver %}{{ bloco_competencia(comp) }}{% endfor %}
+            </div>
+            <button type="button" class="botao-secundario" data-add="comp-template" data-lista="comp-lista">+ Adicionar competência</button>
+            <template id="comp-template">{{ bloco_competencia(comp_vazia) }}</template>
+        </div>
+
+        <div class="cartao">
+            <div class="secao-icone"><span>📅</span><h3>Cronograma</h3></div>
+            <div class="repeat-lista" id="cron-lista">
+                {% for bloco in pdi_json.cronograma %}{{ bloco_cronograma(bloco) }}{% endfor %}
+            </div>
+            <button type="button" class="botao-secundario" data-add="cron-template" data-lista="cron-lista">+ Adicionar bloco</button>
+            <template id="cron-template">{{ bloco_cronograma(cron_vazio) }}</template>
+        </div>
+
+        <div class="acoes">
+            <a class="botao botao-perigo" href="/alunos/{{ aluno.id }}/pdi">✕ Cancelar</a>
+            <button type="submit">💾 Salvar PDI</button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/editor.js"></script>
+{% endblock %}

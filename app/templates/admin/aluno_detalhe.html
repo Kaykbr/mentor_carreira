@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block titulo %}Admin · {{ aluno.nome }}{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/admin/alunos">Alunos</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">{{ aluno.nome }}</span>
+        </nav>
+        <h1>{{ aluno.nome }}
+            {% if aluno.is_admin %}<span class="tag tag-verde" style="vertical-align:middle;">admin</span>{% endif %}
+        </h1>
+        <p class="texto-muted" style="margin:0;">{{ aluno.email }} · {{ aluno.curso }} · {{ aluno.periodo }}º período</p>
+    </div>
+
+    {% include "admin/_subnav.html" %}
+
+    {% if msg %}<p class="info" role="status">{{ msg }}</p>{% endif %}
+    {% if erro %}<p class="erro" role="alert">{{ erro }}</p>{% endif %}
+
+    {# ---- Estado dos artefatos ---- #}
+    <div class="cartao">
+        <div class="secao-icone"><span>📦</span><h3>Artefatos</h3></div>
+        <ul class="lista-artefatos">
+            <li><strong>Triagem:</strong>
+                {% if n_mensagens %}<span class="badge badge-ok">{{ n_mensagens }} mensagem(ns)</span>
+                {% else %}<span class="badge badge-pendente">Sem mensagens</span>{% endif %}
+            </li>
+            <li><strong>Perfil:</strong>
+                {% if perfil %}<span class="badge badge-ok">Gerado em {{ perfil.created_at.strftime('%d/%m/%Y %H:%M') if perfil.created_at else '' }}</span>
+                {% else %}<span class="badge badge-pendente">Não gerado</span>{% endif %}
+            </li>
+            <li><strong>PDI:</strong>
+                {% if pdi %}<span class="badge badge-ok">Gerado em {{ pdi.created_at.strftime('%d/%m/%Y %H:%M') if pdi.created_at else '' }}</span>
+                {% else %}<span class="badge badge-pendente">Não gerado</span>{% endif %}
+            </li>
+            <li><strong>Currículo:</strong>
+                {% if curriculo %}<span class="badge badge-ok">Gerado em {{ curriculo.created_at.strftime('%d/%m/%Y %H:%M') if curriculo.created_at else '' }}</span>
+                {% else %}<span class="badge badge-pendente">Não gerado</span>{% endif %}
+            </li>
+        </ul>
+
+        {% if perfil %}
+            <details class="raw-json"><summary>Ver perfil (JSON)</summary><pre>{{ perfil.profile_json | tojson(indent=2) }}</pre></details>
+        {% endif %}
+        {% if pdi %}
+            <details class="raw-json"><summary>Ver PDI (JSON)</summary><pre>{{ pdi.pdi_json | tojson(indent=2) }}</pre></details>
+        {% endif %}
+        {% if curriculo %}
+            <details class="raw-json"><summary>Ver currículo (texto)</summary><pre>{{ curriculo.curriculum_text }}</pre></details>
+        {% endif %}
+    </div>
+
+    {# ---- Ações de gestão ---- #}
+    <div class="cartao">
+        <div class="secao-icone"><span>🛠️</span><h3>Ações</h3></div>
+        {% if aluno.id == admin.id %}
+            <p class="aviso" role="note">Esta é a sua própria conta — ações de admin/exclusão ficam desabilitadas por segurança.</p>
+        {% else %}
+            <div class="acoes">
+                <form method="post" action="/admin/alunos/{{ aluno.id }}/admin">
+                    {% if aluno.is_admin %}
+                        <input type="hidden" name="valor" value="0">
+                        <button type="submit" class="botao-secundario">Remover admin</button>
+                    {% else %}
+                        <input type="hidden" name="valor" value="1">
+                        <button type="submit">Tornar admin</button>
+                    {% endif %}
+                </form>
+                <form method="post" action="/admin/alunos/{{ aluno.id }}/excluir"
+                      onsubmit="return confirm('Excluir {{ aluno.nome }} ({{ aluno.email }}) e TODOS os seus dados (triagem, perfil, PDI, currículo)?\n\nEsta ação é irreversível.');">
+                    <button type="submit" class="botao-perigo">Excluir aluno permanentemente</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e7b34">
+    <title>{% block titulo %}Mentor de Carreira{% endblock %} · Mentor de Carreira</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Alpine.js — carregado com defer (alpine:init registrado antes em app.js) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+<body data-aluno-id="{{ request.session.get('student_id') or '' }}">
+    <nav>
+        <a class="nav-logo" href="/"><span class="emoji">🎓</span> Mentor de Carreira</a>
+        <div class="nav-links">
+            {% if request.session.get('student_id') %}
+                {% if request.session.get('is_admin') %}
+                    <a href="/admin">
+                        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/icons.svg#icon-shield"/></svg>
+                        Admin
+                    </a>
+                {% endif %}
+                <a href="/alunos/{{ request.session.get('student_id') }}">Painel</a>
+                <a href="/alunos/{{ request.session.get('student_id') }}/perfil">Perfil</a>
+                <a href="/alunos/{{ request.session.get('student_id') }}/configuracoes">Configurações</a>
+                <form method="post" action="/logout" class="nav-logout-form">
+                    <button type="submit" class="botao-link">
+                        <svg class="icon icon-sm" aria-hidden="true"><use href="/static/icons.svg#icon-logout"/></svg>
+                        Sair
+                    </button>
+                </form>
+            {% else %}
+                <a href="/login">Entrar</a>
+                <a class="nav-novo" href="/alunos/novo">Cadastrar</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Toast container global (Alpine) -->
+    {% set _flashes = pop_flashes(request) %}
+    <div
+        x-data="toastManager()"
+        x-init="init({{ _flashes | tojson }})"
+        class="toast-container"
+        aria-live="polite"
+        aria-atomic="false"
+        role="status"
+    >
+        <template x-for="t in toasts" :key="t.id">
+            <div
+                class="toast"
+                :class="'toast-' + t.tipo"
+                x-show="t.visible"
+                x-transition:enter="toast-enter"
+                x-transition:leave="toast-leave"
+                role="alert"
+            >
+                <span x-text="t.msg"></span>
+                <button class="toast-close" @click="dismiss(t.id)" aria-label="Fechar">
+                    <svg class="icon icon-sm" aria-hidden="true"><use href="/static/icons.svg#icon-x"/></svg>
+                </button>
+            </div>
+        </template>
+    </div>
+
+    <!-- Modal de confirmação global (Alpine) -->
+    <div
+        x-data="confirmModal()"
+        @open-confirm.window="open($event.detail)"
+        x-show="visible"
+        class="modal-overlay"
+        @keydown.escape.window="close()"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="message"
+        style="display:none"
+    >
+        <div class="modal-box" @click.stop>
+            <p class="modal-msg" x-text="message"></p>
+            <div class="modal-acoes">
+                <button @click="close()" class="botao botao-secundario">Cancelar</button>
+                <button @click="confirm()" class="botao" :class="{ 'botao-perigo-solido': perigo }" x-text="confirmLabel"></button>
+            </div>
+        </div>
+    </div>
+
+    {# `tut_pagina` liga o tutorial guiado da página (ver static/tutorial.js) #}
+    <main data-tut-pagina="{% block tut_pagina %}{% endblock %}">
+        {% block conteudo %}{% endblock %}
+    </main>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@2.0.3/dist/htmx.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script src="/static/animacoes.js"></script>
+    <script src="/static/tutorial.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

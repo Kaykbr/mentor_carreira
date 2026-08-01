@@ -1,0 +1,68 @@
+%% Diagrama de Casos de Uso - Mentor de Carreira
+%% v1.3 - 2026-07 - inclui Admin, Analisar vaga, Editar artefatos e areas de afinidade (IA)
+%% Atores: Aluno (primario), Admin (aluno com is_admin), Claude / Anthropic API (externo).
+%% Mermaid nao possui diagrama de casos de uso nativo; usamos flowchart com
+%% elipses ( ) para os casos de uso, seguindo a convencao mais aceita.
+flowchart LR
+    aluno([" Aluno "])
+    admin([" Admin<br/>(aluno com is_admin) "])
+    claude([" Claude /<br/>Anthropic API "])
+
+    subgraph sistema["Sistema Mentor de Carreira"]
+        direction TB
+        uc1("Cadastrar-se")
+        uc2("Entrar / Sair")
+        uc3("Ver painel")
+        uc4("Conversar na triagem")
+        uc5("Finalizar triagem<br/>(gera perfil + areas de afinidade)")
+        uc6("Gerar PDI<br/>(+ recursos RAG)")
+        uc7("Gerar curriculo")
+        uc8("Editar perfil / PDI /<br/>Kanban / curriculo")
+        uc9("Analisar vaga (JD)")
+        ucIA("Chamar Claude<br/>(IA)")
+
+        subgraph admarea["Administracao (/admin)"]
+            direction TB
+            ua1("Ver metricas / funil")
+            ua2("Gerir alunos<br/>(excluir / promover)")
+            ua3("Ver diagnostico do sistema")
+        end
+    end
+
+    aluno --- uc1
+    aluno --- uc2
+    aluno --- uc3
+    aluno --- uc4
+    aluno --- uc5
+    aluno --- uc6
+    aluno --- uc7
+    aluno --- uc8
+    aluno --- uc9
+
+    admin -. "e um Aluno (is_admin)" .-> aluno
+    admin --- ua1
+    admin --- ua2
+    admin --- ua3
+
+    %% Relacoes <<include>>: casos que dependem da IA
+    uc4 -. include .-> ucIA
+    uc5 -. include .-> ucIA
+    uc6 -. include .-> ucIA
+    uc7 -. include .-> ucIA
+    uc9 -. include .-> ucIA
+
+    %% Dependencias entre casos (perfil e pre-requisito)
+    uc6 -. requer perfil .-> uc5
+    uc7 -. requer perfil .-> uc5
+    uc9 -. requer perfil .-> uc5
+
+    ucIA --- claude
+
+    classDef ator fill:#dbeafe,stroke:#1e40af,stroke-width:2px;
+    classDef caso fill:#f0fdf4,stroke:#15803d;
+    classDef ia fill:#fef9c3,stroke:#a16207;
+    classDef adm fill:#fae8ff,stroke:#a21caf;
+    class aluno,admin,claude ator;
+    class uc1,uc2,uc3,uc4,uc5,uc6,uc7,uc8,uc9 caso;
+    class ua1,ua2,ua3 adm;
+    class ucIA ia;

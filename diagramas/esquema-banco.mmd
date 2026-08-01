@@ -1,0 +1,70 @@
+%% Esquema do Banco de Dados (ER) - Mentor de Carreira
+%% v1.2.2 - 2026-07 - 7 tabelas: + curriculum_vagas (N por aluno) e curriculum_analises (1 por aluno).
+%% Areas de afinidade sao geradas pela IA e vivem dentro de profile_json (sem tabela).
+%% Fonte de verdade: app/models.py (SQLAlchemy).
+%% Subestrutura completa dos campos JSON: ver diagramas/README.md e CLAUDE.md.
+erDiagram
+    students ||--o{ triage_messages : "possui"
+    students ||--o| student_profiles : "tem (0..1)"
+    students ||--o| pdis : "tem (0..1)"
+    students ||--o| curriculums : "tem (0..1)"
+    students ||--o{ curriculum_vagas : "tem (0..N)"
+    students ||--o| curriculum_analises : "tem (0..1)"
+
+    students {
+        int id PK "autoincremento"
+        string nome "NOT NULL"
+        string email "NOT NULL, UNIQUE, INDEX"
+        string password_hash "NOT NULL (bcrypt)"
+        string curso "NOT NULL, default 'Sistemas de Informacao'"
+        int periodo "NOT NULL (1..12)"
+        boolean is_admin "NOT NULL, default false"
+        datetime created_at "UTC, default now"
+    }
+
+    triage_messages {
+        int id PK
+        int student_id FK "NOT NULL, INDEX"
+        string role "user | assistant"
+        text content "NOT NULL"
+        datetime created_at "UTC, default now"
+    }
+
+    student_profiles {
+        int id PK
+        int student_id FK "NOT NULL, UNIQUE"
+        json profile_json "NOT NULL (+areas_afinidade, formacao, certificacoes, links)"
+        datetime created_at "UTC, default now"
+    }
+
+    pdis {
+        int id PK
+        int student_id FK "NOT NULL, UNIQUE"
+        json pdi_json "NOT NULL (+quadro_kanban)"
+        datetime created_at "UTC, default now"
+    }
+
+    curriculums {
+        int id PK
+        int student_id FK "NOT NULL, UNIQUE"
+        text curriculum_text "NOT NULL (texto ATS)"
+        datetime created_at "UTC, default now"
+    }
+
+    curriculum_vagas {
+        int id PK
+        int student_id FK "NOT NULL, INDEX (sem UNIQUE - N por aluno)"
+        string cargo "NOT NULL (titulo da vaga)"
+        text jd_text "NOT NULL (descricao original da vaga)"
+        json analise_json "NOT NULL (aderencia + recomendacoes)"
+        text curriculum_text "NOT NULL (curriculo direcionado, ATS)"
+        datetime created_at "UTC, default now"
+    }
+
+    curriculum_analises {
+        int id PK
+        int student_id FK "NOT NULL, UNIQUE"
+        json analise_json "NOT NULL (dicas de melhoria geradas pela IA)"
+        string texto_hash "NOT NULL (SHA-256 do curriculo analisado)"
+        datetime created_at "UTC, default now"
+    }

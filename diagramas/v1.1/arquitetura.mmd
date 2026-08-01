@@ -1,0 +1,52 @@
+%% Diagrama de Arquitetura / Componentes - Mentor de Carreira
+%% Camadas: Cliente -> FastAPI (middleware + routers) -> Services -> claude_client -> Anthropic
+%%          Services -> SQLAlchemy ORM -> SQLite
+flowchart TB
+    cliente["Navegador / Cliente HTTP"]
+
+    subgraph fastapi["FastAPI (app/main.py)"]
+        direction TB
+        mw["SessionMiddleware<br/>(cookie de sessao assinado)"]
+        subgraph routers["Routers (app/routes)"]
+            direction LR
+            rAuth["auth.py"]
+            rStud["students.py"]
+            rTri["triage.py"]
+            rPdi["pdi.py"]
+            rCur["curriculum.py"]
+            rWeb["web.py (HTML/Jinja2)"]
+        end
+        deps["_deps.py<br/>guards de auth/autorizacao"]
+    end
+
+    subgraph services["Services (app/services)"]
+        direction LR
+        sAuth["auth_service"]
+        sStud["student_service"]
+        sProf["profile_service"]
+        sPdi["pdi_service"]
+        sCur["curriculum_service"]
+        sBase["_base.upsert_registro"]
+    end
+
+    cc["claude_client<br/>(singleton + retry/tenacity + tool_use)"]
+    anthropic["Anthropic API<br/>(claude-sonnet-4-6)"]
+    orm["SQLAlchemy ORM<br/>(app/models.py)"]
+    db[("SQLite<br/>mentor.db")]
+
+    cliente -->|HTTP| mw
+    mw --> routers
+    routers --> deps
+    routers --> services
+    services --> sBase
+    services --> cc
+    cc --> anthropic
+    services --> orm
+    orm --> db
+
+    classDef infra fill:#e0e7ff,stroke:#3730a3;
+    classDef ext fill:#fef9c3,stroke:#a16207;
+    classDef store fill:#dcfce7,stroke:#15803d;
+    class mw,cc infra;
+    class anthropic ext;
+    class db,orm store;

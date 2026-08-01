@@ -1,0 +1,43 @@
+%% Diagrama de Sequencia - Cadastro e Login (autenticacao por aluno)
+sequenceDiagram
+    autonumber
+    actor Aluno
+    participant Web as web.py (HTML)
+    participant SS as student_service
+    participant AS as auth_service
+    participant DB as SQLite (students)
+    participant Sess as Sessao (cookie assinado)
+
+    rect rgb(240, 249, 255)
+    note over Aluno,Sess: Cadastro (POST /alunos/novo)
+    Aluno->>Web: nome, e-mail, senha, confirmar_senha, periodo
+    Web->>Web: valida senha == confirmar_senha
+    Web->>SS: email_em_uso(email)?
+    SS->>DB: SELECT por email
+    DB-->>SS: existe? (sim -> 409)
+    Web->>AS: gerar_hash_senha(senha) [bcrypt]
+    AS-->>Web: password_hash
+    Web->>SS: criar_aluno(nome, email, periodo, password_hash)
+    SS->>DB: INSERT student
+    DB-->>SS: aluno (id)
+    Web->>Sess: session["student_id"] = id
+    Web-->>Aluno: 303 Redirect -> /alunos/{id}
+    end
+
+    rect rgb(243, 244, 246)
+    note over Aluno,Sess: Login (POST /login)
+    Aluno->>Web: e-mail, senha
+    Web->>AS: autenticar_aluno(email, senha)
+    AS->>SS: obter_por_email(email)
+    SS->>DB: SELECT por email
+    DB-->>AS: aluno (ou None)
+    AS->>AS: verificar_senha(senha, password_hash) [bcrypt]
+    alt credenciais validas
+        AS-->>Web: aluno
+        Web->>Sess: session["student_id"] = id
+        Web-->>Aluno: 303 Redirect -> /alunos/{id}
+    else invalidas
+        AS-->>Web: None
+        Web-->>Aluno: 401 + login.html com erro
+    end
+    end

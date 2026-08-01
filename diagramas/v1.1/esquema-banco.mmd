@@ -1,0 +1,48 @@
+%% Esquema do Banco de Dados (ER) - Mentor de Carreira
+%% Fonte de verdade: app/models.py (SQLAlchemy)
+%% students 1:N triage_messages | students 1:0..1 (profile / pdi / curriculum)
+erDiagram
+    students ||--o{ triage_messages : "possui"
+    students ||--o| student_profiles : "tem (0..1)"
+    students ||--o| pdis : "tem (0..1)"
+    students ||--o| curriculums : "tem (0..1)"
+
+    students {
+        int id PK "autoincremento"
+        string nome "NOT NULL"
+        string email "NOT NULL, UNIQUE, INDEX"
+        string password_hash "NOT NULL (bcrypt)"
+        string curso "NOT NULL, default 'Sistemas de Informacao'"
+        int periodo "NOT NULL (1..12)"
+        boolean is_admin "NOT NULL, default false"
+        datetime created_at "UTC, default now"
+    }
+
+    triage_messages {
+        int id PK
+        int student_id FK "NOT NULL, INDEX"
+        string role "user | assistant"
+        text content "NOT NULL"
+        datetime created_at "UTC, default now"
+    }
+
+    student_profiles {
+        int id PK
+        int student_id FK "NOT NULL, UNIQUE"
+        json profile_json "NOT NULL"
+        datetime created_at "UTC, default now"
+    }
+
+    pdis {
+        int id PK
+        int student_id FK "NOT NULL, UNIQUE"
+        json pdi_json "NOT NULL"
+        datetime created_at "UTC, default now"
+    }
+
+    curriculums {
+        int id PK
+        int student_id FK "NOT NULL, UNIQUE"
+        text curriculum_text "NOT NULL"
+        datetime created_at "UTC, default now"
+    }

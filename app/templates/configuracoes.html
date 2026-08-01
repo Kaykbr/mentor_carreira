@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block titulo %}Configurações · {{ aluno.nome }}{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">Configurações</span>
+        </nav>
+        <h1>Configurações da conta</h1>
+        <p class="texto-muted" style="margin:0;">Ajuste seus dados básicos e, se quiser, troque sua senha.</p>
+    </div>
+
+    {# ============ Seção 1 — Dados da conta (form independente) ============ #}
+    <form method="post" action="/alunos/{{ aluno.id }}/configuracoes" data-loading="Salvando…">
+        <div class="cartao" style="margin-bottom:1rem;">
+            <div class="secao-icone" style="margin-bottom:1rem;">
+                <span>👤</span>
+                <h3>Dados da conta</h3>
+            </div>
+
+            {% if erro_dados %}
+            <div class="alerta alerta-erro" role="alert" style="margin-bottom:.75rem;">{{ erro_dados }}</div>
+            {% endif %}
+
+            <label>Nome completo
+                <input type="text" name="nome"
+                       value="{{ nome if nome is defined else aluno.nome }}"
+                       required maxlength="200" placeholder="Seu nome completo"
+                       class="{{ 'campo-erro' if campo_dados == 'nome' else '' }}">
+            </label>
+
+            <label>Período atual
+                <span class="dica" title="Semestre em que você está matriculado (1 a 8)">?</span>
+                <input type="number" name="periodo"
+                       value="{{ periodo if periodo is defined else aluno.periodo }}"
+                       required min="1" max="8" style="max-width:110px;"
+                       class="{{ 'campo-erro' if campo_dados == 'periodo' else '' }}">
+            </label>
+
+            <p class="texto-muted" style="margin:.6rem 0 0; font-size:.9rem;">
+                <strong>E-mail:</strong> {{ aluno.email }}<br>
+                <strong>Curso:</strong> {{ aluno.curso }}
+            </p>
+
+            <div class="acoes" style="margin-top:1rem;">
+                <a class="botao botao-perigo" href="/alunos/{{ aluno.id }}">✕ Cancelar</a>
+                <button type="submit" class="botao">💾 Salvar dados</button>
+            </div>
+        </div>
+    </form>
+
+    {# ============ Seção 2 — Segurança / trocar senha (form independente) ============ #}
+    <form method="post" action="/alunos/{{ aluno.id }}/configuracoes/senha" data-loading="Alterando senha…">
+        <div class="cartao">
+            <div class="secao-icone" style="margin-bottom:1rem;">
+                <span>🔒</span>
+                <h3>Alterar senha</h3>
+            </div>
+
+            {% if erro_senha %}
+            <div class="alerta alerta-erro" role="alert" style="margin-bottom:.75rem;">{{ erro_senha }}</div>
+            {% endif %}
+
+            <label>Senha atual
+                <input type="password" name="senha_atual" required
+                       autocomplete="current-password"
+                       class="{{ 'campo-erro' if campo_senha == 'senha_atual' else '' }}">
+            </label>
+
+            <label>Nova senha
+                <input type="password" name="nova_senha" required
+                       minlength="8" maxlength="128"
+                       autocomplete="new-password"
+                       placeholder="Mínimo 8 caracteres"
+                       class="{{ 'campo-erro' if campo_senha == 'nova_senha' else '' }}">
+            </label>
+
+            <label>Confirmar nova senha
+                <input type="password" name="confirmar_nova_senha" required
+                       minlength="8" maxlength="128"
+                       autocomplete="new-password"
+                       placeholder="Digite a nova senha de novo"
+                       class="{{ 'campo-erro' if campo_senha == 'confirmar_nova_senha' else '' }}">
+            </label>
+
+            <div class="acoes" style="margin-top:1rem;">
+                <button type="submit" class="botao">🔑 Alterar senha</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

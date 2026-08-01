@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ vaga.cargo }} · Currículo por vaga{% endblock %}
+{% block tut_pagina %}curriculo_vaga{% endblock %}
+
+{% block conteudo %}
+    {% include '_partials/estilo_impressao_curriculo.html' %}
+
+    {% if analise.score >= 70 %}{% set score_classe = 'badge-ok' %}
+    {% elif analise.score >= 40 %}{% set score_classe = 'badge-pendente' %}
+    {% else %}{% set score_classe = 'badge-lacuna' %}{% endif %}
+
+    <div class="pagina-header">
+        <nav class="breadcrumb" aria-label="Localização">
+            <a href="/alunos/{{ aluno.id }}">Painel</a>
+            <span aria-hidden="true"> › </span>
+            <a href="/alunos/{{ aluno.id }}/curriculo">Currículo</a>
+            <span aria-hidden="true"> › </span>
+            <span aria-current="page">{{ vaga.cargo }}</span>
+        </nav>
+        <h1>{{ vaga.cargo }}</h1>
+        <p class="texto-muted" style="margin:0;">
+            Currículo direcionado gerado em {{ vaga.created_at.strftime('%d/%m/%Y às %H:%M') if vaga.created_at else '' }}
+            · Aderência: <span class="badge {{ score_classe }}">{{ analise.score }}%</span>
+        </p>
+    </div>
+
+    {# ============ 1. Análise da vaga ============ #}
+    <div class="cartao nao-imprimir"
+         data-tut="1"
+         data-tut-titulo="Sua aderência à vaga"
+         data-tut-texto="O percentual compara os requisitos extraídos da vaga com o que consta no seu perfil e PDI. Ele é calculado por regras (não pela IA), então é auditável: abaixo você vê exatamente o que entrou em cada grupo.">
+        <div class="secao-icone">
+            <span>📊</span>
+            <h3>Análise da vaga</h3>
+            <span class="badge {{ score_classe }}" style="margin-left:auto; font-size:1.05rem; padding:.3rem 1rem;">{{ analise.score }}%</span>
+        </div>
+        <p class="texto-muted" style="margin:.25rem 0 .75rem;">
+            {% if analise.score >= 70 %}Ótima aderência! Você já tem a maioria dos requisitos desta vaga.
+            {% elif analise.score >= 40 %}Aderência parcial. As recomendações abaixo mostram como evoluir.
+            {% else %}Aderência baixa ainda. Use as recomendações abaixo para fechar as lacunas e aumentar sua chance.{% endif %}
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:.6rem; font-size:.9rem;">
+            <div><strong>Cargo:</strong> {{ analise.cargo or 'Não identificado' }}</div>
+            <div><strong>Nível:</strong>
+                {% if analise.nivel == 'estagio' %}Estágio
+                {% elif analise.nivel == 'junior' %}Júnior
+                {% elif analise.nivel == 'pleno' %}Pleno
+                {% elif analise.nivel == 'senior' %}Sênior
+                {% else %}Não identificado{% endif %}
+            </div>
+            <div><strong>Modalidade:</strong>
+                {% if analise.modalidade == 'presencial' %}Presencial
+                {% elif analise.modalidade == 'remoto' %}Remoto
+                {% elif analise.modalidade == 'hibrido' %}Híbrido
+                {% else %}Não informado{% endif %}
+            </div>
+            {% if analise.localizacao %}
+            <div><strong>Localização:</strong> {{ analise.localizacao }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Competências técnicas #}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>⚙️</span><h3>Competências técnicas</h3></div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1rem; margin-top:.75rem;">
+            <div>
+                <p style="font-weight:700; color:var(--verde-tx); margin-bottom:.4rem;">✓ Você já possui ({{ analise.tecnicas.possui|length }})</p>
+                {% if analise.tecnicas.possui %}
+                    <div class="tags">{% for c in analise.tecnicas.possui %}<span class="tag tag-verde">{{ c }}</span>{% endfor %}</div>
+                {% else %}
+                    <p class="texto-muted">Nenhuma correspondência encontrada.</p>
+                {% endif %}
+            </div>
+            <div>
+                <p style="font-weight:700; color:var(--amarelo-tx); margin-bottom:.4rem;">⚡ Em desenvolvimento ({{ analise.tecnicas.em_desenvolvimento|length }})</p>
+                {% if analise.tecnicas.em_desenvolvimento %}
+                    <div class="tags">
+                        {% for c in analise.tecnicas.em_desenvolvimento %}
+                        <span class="tag" style="background:var(--amarelo-bg);color:var(--amarelo-tx)">{{ c }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="texto-muted">Nenhuma.</p>
+                {% endif %}
+            </div>
+            <div>
+                <p style="font-weight:700; color:var(--vermelho-tx); margin-bottom:.4rem;">○ Lacunas ({{ analise.tecnicas.lacuna|length }})</p>
+                {% if analise.tecnicas.lacuna %}
+                    <div class="tags">
+                        {% for c in analise.tecnicas.lacuna %}
+                        <span class="tag" style="background:var(--vermelho-bg);color:var(--vermelho-tx)">{{ c }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="texto-muted" style="color:var(--verde-tx)">Nenhuma! 🎉</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Soft skills #}
+    {% if analise.soft_skills.possui or analise.soft_skills.lacuna %}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>🤝</span><h3>Soft skills</h3></div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:1rem; margin-top:.75rem;">
+            <div>
+                <p style="font-weight:700; color:var(--verde-tx); margin-bottom:.4rem;">✓ Mapeadas no seu perfil ({{ analise.soft_skills.possui|length }})</p>
+                {% if analise.soft_skills.possui %}
+                    <div class="tags">{% for s in analise.soft_skills.possui %}<span class="tag tag-verde">{{ s }}</span>{% endfor %}</div>
+                {% else %}
+                    <p class="texto-muted">Nenhuma.</p>
+                {% endif %}
+            </div>
+            <div>
+                <p style="font-weight:700; color:var(--texto-muted); margin-bottom:.4rem;">○ Não mapeadas ({{ analise.soft_skills.lacuna|length }})</p>
+                {% if analise.soft_skills.lacuna %}
+                    <div class="tags">{% for s in analise.soft_skills.lacuna %}<span class="tag">{{ s }}</span>{% endfor %}</div>
+                {% else %}
+                    <p class="texto-muted" style="color:var(--verde-tx)">Nenhuma! 🎉</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Diferenciais #}
+    {% if analise.diferenciais %}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>⭐</span><h3>Diferenciais desejáveis</h3></div>
+        <p class="texto-muted" style="margin:.15rem 0 .6rem">Não obrigatórios, mas contam pontos extras na seleção.</p>
+        <div class="tags">
+            {% for d in analise.diferenciais %}
+            <span class="tag" style="background:var(--azul-claro);color:var(--azul)">{{ d }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ============ 2. Recomendações ============ #}
+    {% if recomendacoes %}
+    <div class="cartao nao-imprimir" style="border-left:4px solid var(--azul)"
+         data-tut="2"
+         data-tut-titulo="Recomendações para se tornar competitivo"
+         data-tut-texto="Aqui e nos cartões abaixo: seus pontos fortes para esta vaga, o que melhorar, projetos que valeria ter no portfólio e dicas práticas para a candidatura.">
+        <div class="secao-icone"><span>🧭</span><h3>Como você está para esta vaga</h3></div>
+        <p style="margin:.35rem 0 0;">{{ recomendacoes.resumo_aderencia }}</p>
+    </div>
+
+    {% if recomendacoes.pontos_fortes %}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>💪</span><h3>Seus pontos fortes nesta vaga</h3></div>
+        <ul style="margin:.35rem 0 0;">
+            {% for p in recomendacoes.pontos_fortes %}<li>{{ p }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if recomendacoes.como_melhorar %}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>📈</span><h3>Como melhorar e ficar mais competitivo</h3></div>
+        <ol style="margin:.35rem 0 0;">
+            {% for m in recomendacoes.como_melhorar %}<li style="margin-bottom:.3rem;">{{ m }}</li>{% endfor %}
+        </ol>
+    </div>
+    {% endif %}
+
+    {% if recomendacoes.projetos_sugeridos %}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>🛠️</span><h3>Projetos sugeridos para o seu portfólio</h3></div>
+        <p class="texto-muted" style="margin:.15rem 0 .75rem">
+            Projetos viáveis para demonstrar exatamente as competências que esta vaga pede.
+        </p>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:1rem;">
+            {% for proj in recomendacoes.projetos_sugeridos %}
+            <div style="border:1px solid var(--borda); border-radius:var(--radius); padding:.85rem 1rem; background:#fafbfc;">
+                <p style="font-weight:700; margin:0 0 .3rem;">{{ proj.titulo }}</p>
+                <p style="margin:0 0 .5rem; font-size:.95rem;">{{ proj.descricao }}</p>
+                {% if proj.competencias %}
+                <div class="tags">
+                    {% for c in proj.competencias %}<span class="tag" style="background:var(--azul-claro);color:var(--azul)">{{ c }}</span>{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if recomendacoes.dicas_competitivas %}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>💡</span><h3>Dicas competitivas</h3></div>
+        <ul style="margin:.35rem 0 0;">
+            {% for d in recomendacoes.dicas_competitivas %}<li style="margin-bottom:.3rem;">{{ d }}</li>{% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {# Recursos de estudo (RAG) #}
+    {% if analise.recursos_lacunas %}
+    <div class="cartao nao-imprimir">
+        <div class="secao-icone"><span>📚</span><h3>Recursos para fechar as lacunas</h3></div>
+        <p class="texto-muted" style="margin:.15rem 0 .75rem">Materiais selecionados para desenvolver as competências que faltam.</p>
+        <ul style="margin:0;">
+            {% for r in analise.recursos_lacunas %}
+            <li style="margin-bottom:.5rem;">
+                <strong>{{ r.competencia }}:</strong>
+                <a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.titulo }}</a>
+                {% if r.tipo %}<span class="badge badge-tipo" style="margin-left:.4rem;">{{ r.tipo }}</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {# ============ 3. Currículo direcionado ============ #}
+    <div class="secao-icone nao-imprimir" style="margin-top:1.5rem;">
+        <span>📄</span><h3 style="margin:0;">Currículo direcionado a esta vaga</h3>
+    </div>
+    <p class="texto-muted nao-imprimir" style="margin:.25rem 0 .75rem;">
+        Otimizado com as palavras-chave desta vaga (ATS). Revise antes de enviar; você pode editar abaixo.
+    </p>
+
+    <div class="curriculo-acoes nao-imprimir"
+         data-tut="3"
+         data-tut-titulo="Currículo direcionado a esta vaga"
+         data-tut-texto="Abaixo está uma versão do seu currículo com as palavras-chave desta vaga em destaque. Copie, exporte em PDF ou edite antes de se candidatar. Ele fica salvo na sua lista de currículos.">
+        <button class="botao botao-secundario" onclick="
+            navigator.clipboard.writeText(document.getElementById('texto-curriculo-vaga').innerText)
+                .then(() => { this.textContent = '✓ Copiado!'; setTimeout(() => this.textContent = 'Copiar texto', 2000); })
+                .catch(() => {});
+        ">Copiar texto</button>
+        <button class="botao botao-secundario" onclick="window.print()">Exportar como PDF</button>
+        <button type="button" class="botao" data-toggle="curriculo-vaga-view,curriculo-vaga-edit">✏️ Editar</button>
+    </div>
+
+    <div class="cartao" style="padding:0;" id="curriculo-vaga-view">
+        <pre id="texto-curriculo-vaga" class="curriculo-pre" data-destacar-secoes>{{ vaga.curriculum_text }}</pre>
+    </div>
+
+    <form method="post" action="/alunos/{{ aluno.id }}/curriculo/vagas/{{ vaga.id }}/editar"
+          id="curriculo-vaga-edit" class="cartao oculto form-edicao" data-loading="Salvando…">
+        <label>Edite o texto do currículo desta vaga
+            <textarea name="curriculum_text" rows="22" required>{{ vaga.curriculum_text }}</textarea>
+        </label>
+        <div class="acoes">
+            <button type="button" class="botao botao-perigo" data-toggle="curriculo-vaga-view,curriculo-vaga-edit">Cancelar</button>
+            <button type="submit">Salvar currículo</button>
+        </div>
+    </form>
+
+    <div class="acoes nao-imprimir" style="margin-top:1.25rem;">
+        <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/curriculo">← Voltar aos currículos</a>
+        <button type="button" class="botao botao-secundario" x-data
+            @click="$dispatch('open-confirm', {
+                message: 'Excluir este currículo por vaga? A análise e o texto serão perdidos.',
+                action: '/alunos/{{ aluno.id }}/curriculo/vagas/{{ vaga.id }}/excluir',
+                method: 'POST',
+                perigo: true,
+                confirmLabel: 'Excluir'
+            })">
+            🗑️ Excluir
+        </button>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/editor.js"></script>
+{% endblock %}

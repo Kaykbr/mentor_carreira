@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ aluno.nome }}{% endblock %}
+{% block tut_pagina %}painel{% endblock %}
+
+{% block conteudo %}
+    <div class="pagina-header"
+         data-tut="1"
+         data-tut-titulo="Bem-vindo ao Mentor de Carreira!"
+         data-tut-texto="Este é o seu painel. A partir daqui você acessa e acompanha todas as etapas da sua jornada de carreira. Vamos ver rapidamente como funciona?">
+        <h1>{{ aluno.nome }}</h1>
+        <p class="texto-muted" style="margin:0;">{{ aluno.email }} · {{ aluno.curso }} · {{ aluno.periodo }}º período</p>
+    </div>
+
+    {# Barra de progresso. 4 etapas: triagem, perfil, PDI, currículo.
+       Triagem conta como concluída se houver histórico ou perfil gerado. #}
+    {% set n_ok = (1 if tem_historico or perfil else 0) + (1 if perfil else 0) + (1 if pdi else 0) + (1 if curriculo else 0) %}
+    {% set proximo_passo = 1 if (not tem_historico and not perfil)
+       else (2 if (tem_historico and not perfil)
+       else (3 if (perfil and not pdi)
+       else (4 if (pdi and not curriculo) else 0))) %}
+
+    <div class="progress-wrap"
+         data-tut="2"
+         data-tut-titulo="Seu progresso"
+         data-tut-texto="A jornada tem 4 etapas: Triagem, Perfil, PDI e Currículo. Esta barra mostra quanto você já concluiu.">
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ n_ok * 25 }}%;"></div>
+        </div>
+        <p class="progress-label">
+            {% if n_ok == 4 %}Todas as etapas concluídas 🎉
+            {% elif n_ok == 0 %}Nenhuma etapa iniciada ainda
+            {% else %}{{ n_ok }} de 4 etapas concluídas{% endif %}
+        </p>
+    </div>
+
+    <div class="grade-status">
+
+        {# --- Etapa 1: Triagem --- #}
+        <div class="cartao cartao-etapa{% if proximo_passo == 1 %} proximo-passo{% endif %}"
+             data-tut="3"
+             data-tut-titulo="Comece pela Triagem"
+             data-tut-texto="É uma conversa com o mentor de IA: ele pergunta sobre sua experiência, seus interesses e objetivos. Responda com naturalidade, é daqui que sai todo o resto do sistema.">
+            <div class="passo-num {% if not perfil and not tem_historico %}pendente{% endif %}">1</div>
+            <h3>Triagem</h3>
+            {% if perfil %}
+                <span class="badge badge-ok">Concluída</span>
+            {% elif tem_historico %}
+                <span class="badge badge-pendente">Em andamento</span>
+            {% else %}
+                <span class="badge badge-pendente">Não iniciada</span>
+            {% endif %}
+            <div class="etapa-acao">
+                <a class="botao" href="/alunos/{{ aluno.id }}/triagem">
+                    {% if perfil %}Ver conversa{% elif tem_historico %}Continuar triagem{% else %}Iniciar triagem{% endif %}
+                </a>
+            </div>
+        </div>
+
+        {# --- Etapa 2: Perfil --- #}
+        <div class="cartao cartao-etapa{% if proximo_passo == 2 %} proximo-passo{% endif %}"
+             data-tut="4"
+             data-tut-titulo="As etapas se desbloqueiam em ordem"
+             data-tut-texto="Perfil, PDI e Currículo ficam bloqueados até a etapa anterior ficar pronta. Ao finalizar a triagem, seu perfil é gerado automaticamente e o restante é liberado.">
+            <div class="passo-num {% if not perfil %}pendente{% endif %}">2</div>
+            <h3>Perfil</h3>
+            {% if perfil %}
+                <span class="badge badge-ok">Gerado</span>
+                <div class="etapa-acao">
+                    <a class="botao" href="/alunos/{{ aluno.id }}/perfil">Ver perfil</a>
+                    <a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/perfil/editar">Editar</a>
+                </div>
+            {% else %}
+                <span class="badge badge-pendente">Pendente</span>
+                <div class="etapa-acao">
+                    <span class="botao botao-desabilitado"
+                          data-tooltip="Conclua a triagem para desbloquear o perfil">Ver perfil</span>
+                </div>
+            {% endif %}
+        </div>
+
+        {# --- Etapa 3: PDI --- #}
+        <div class="cartao cartao-etapa{% if proximo_passo == 3 %} proximo-passo{% endif %}"
+             data-tut="5"
+             data-tut-titulo="Etapa 3: PDI (Plano de Desenvolvimento)"
+             data-tut-texto="Com o perfil pronto, a IA gera seu plano: objetivo geral, metas de curto e médio prazo, competências a desenvolver e um cronograma. Vem também um quadro Kanban editável para você organizar as ações no seu ritmo. É um ponto de partida, não uma receita fechada.">
+            <div class="passo-num {% if not pdi %}pendente{% endif %}">3</div>
+            <h3>PDI <span style="font-size:0.8em; font-weight:400; color:var(--texto-muted);">(Plano de Desenvolvimento)</span></h3>
+            {% if pdi %}
+                <span class="badge badge-ok">Gerado</span>
+            {% else %}
+                <span class="badge badge-pendente">Pendente</span>
+            {% endif %}
+            <div class="etapa-acao">
+                {% if perfil %}
+                    <a class="botao" href="/alunos/{{ aluno.id }}/pdi">{% if pdi %}Ver PDI{% else %}Gerar PDI{% endif %}</a>
+                    {% if pdi %}<a class="botao botao-secundario" href="/alunos/{{ aluno.id }}/pdi/editar">Editar</a>{% endif %}
+                {% else %}
+                    <span class="botao botao-desabilitado"
+                          data-tooltip="Gere seu perfil primeiro para desbloquear o PDI">Ver PDI</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {# --- Etapa 4: Currículo --- #}
+        <div class="cartao cartao-etapa{% if proximo_passo == 4 %} proximo-passo{% endif %}"
+             data-tut="6"
+             data-tut-titulo="Etapa 4: Currículo"
+             data-tut-texto="A IA gera um currículo em formato ATS (que passa por sistemas de triagem automática), montado a partir do seu perfil e do que estiver concluído no PDI. Você pode editar direto na página, copiar, exportar em PDF e depois direcionar para uma vaga real (bloco abaixo).">
+            <div class="passo-num {% if not curriculo %}pendente{% endif %}">4</div>
+            <h3>Currículo <span style="font-size:0.8em; font-weight:400; color:var(--texto-muted);">(geral, ATS)</span></h3>
+            {% if curriculo %}
+                <span class="badge badge-ok">Gerado</span>
+            {% else %}
+                <span class="badge badge-pendente">Pendente</span>
+            {% endif %}
+            <div class="etapa-acao">
+                {% if perfil %}
+                    <a class="botao" href="/alunos/{{ aluno.id }}/curriculo">{% if curriculo %}Ver currículo{% else %}Gerar currículo{% endif %}</a>
+                {% else %}
+                    <span class="botao botao-desabilitado"
+                          data-tooltip="Gere seu perfil primeiro para desbloquear o currículo">Ver currículo</span>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    {% if areas_afinidade %}
+    <h2>Áreas que combinam com você</h2>
+    <div class="cartao">
+        <div class="secao-icone"><span>🧭</span><h3>Caminhos para explorar</h3></div>
+        <p class="texto-muted" style="margin:0 0 .75rem;">
+            Sugestões do mentor a partir da sua triagem: possibilidades para explorar, não um veredito.
+            <a href="/alunos/{{ aluno.id }}/perfil#sec-areas">Ver no perfil →</a>
+        </p>
+        <div class="tags">
+            {% for a in areas_afinidade %}
+            <span class="tag tag-verde">{{ a.area }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if pdi %}
+    <div class="cartao reveal">
+        <div class="secao-icone">
+            <span>{{ nivel.emoji }}</span>
+            <h3>Seu desenvolvimento</h3>
+            <span class="badge badge-{{ nivel.classe }}" style="margin-left:auto">{{ nivel.nome }}</span>
+        </div>
+        <p class="texto-muted" style="margin:.25rem 0 1rem">{{ nivel.descricao }}</p>
+        <div style="display:flex; align-items:center; gap:.75rem; margin-bottom:.5rem;">
+            <span style="font-size:.85rem; color:var(--texto-muted); min-width:120px">Ações concluídas</span>
+            <div class="progress-bar" style="flex:1; height:8px;">
+                <div class="progress-fill" style="width:{{ kanban_stats.pct }}%"></div>
+            </div>
+            <span style="font-size:.85rem; font-weight:700;">{{ kanban_stats.concluidos }}/{{ kanban_stats.total }}</span>
+        </div>
+        <div style="display:flex; gap:1rem; font-size:.82rem; color:var(--texto-muted); margin-top:.25rem;">
+            <span>📋 {{ kanban_stats.a_fazer }} a fazer</span>
+            <span>⚡ {{ kanban_stats.em_progresso }} em progresso</span>
+            <span>✅ {{ kanban_stats.concluidos }} concluídas</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if perfil %}
+    <div class="cartao reveal" style="border-left:4px solid var(--azul)"
+         data-tut="7"
+         data-tut-titulo="Bônus: Currículo por vaga"
+         data-tut-texto="Com o perfil pronto, cole aqui uma vaga real: o sistema calcula sua aderência, sugere como ficar mais competitivo e gera um currículo direcionado àquela vaga.">
+        <div class="secao-icone"><span>🎯</span><h3>Currículo por vaga</h3></div>
+        <p class="texto-muted">Diferente do currículo geral (etapa 4), aqui você cola a descrição de uma <strong>vaga real</strong>: o sistema mostra sua aderência, recomenda como ficar mais competitivo e gera uma versão do currículo direcionada àquela vaga. Tudo fica salvo na página de currículos.</p>
+        <a class="botao" href="/alunos/{{ aluno.id }}/curriculo/vagas/nova">Analisar vaga e gerar currículo →</a>
+    </div>
+    {% endif %}
+
+    {# Passo final: aponta o botão flutuante "?" para reabrir o tutorial. #}
+    <div id="tut-ajuda-marker" aria-hidden="true"
+         data-tut="99"
+         data-tut-titulo="Precisa rever o tutorial?"
+         data-tut-texto="Sempre que quiser rever esta explicação (ou o tutorial de qualquer outra página), clique no botão flutuante com o símbolo ? no canto inferior direito. Ele reabre este tour do começo."
+         style="position:fixed; right:1rem; bottom:1rem; width:44px; height:44px; pointer-events:none; opacity:0;"></div>
+{% endblock %}

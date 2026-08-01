@@ -1,0 +1,60 @@
+# Ambiente virtual Python
+venv/
+.venv/
+env/
+
+# Variáveis de ambiente e segredos
+.env
+.env.local
+.env.*.local
+
+# Banco de dados SQLite (gerado em runtime)
+*.db
+*.db-shm
+*.db-wal
+mentor.db
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Cache do pytest e cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.lcov
+
+# Distribuição / build
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+
+# IDEs e editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Jupyter (se usado para prototipagem)
+.ipynb_checkpoints/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ruff / linters
+.ruff_cache/
