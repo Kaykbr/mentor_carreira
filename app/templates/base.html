@@ -4,15 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1e7b34">
-    <title>{% block titulo %}Mentor de Carreira{% endblock %} · Mentor de Carreira</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+    <title>{% block titulo %}TRADUZ{% endblock %} · TRADUZ</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231e7b34' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polygon points='16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76' fill='%231e7b34' stroke='none'/></svg>">
     <link rel="stylesheet" href="/static/style.css">
     <!-- Alpine.js — carregado com defer (alpine:init registrado antes em app.js) -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
 </head>
 <body data-aluno-id="{{ request.session.get('student_id') or '' }}">
     <nav>
-        <a class="nav-logo" href="/"><span class="emoji">🎓</span> Mentor de Carreira</a>
+        <a class="nav-logo" href="/">
+            <svg class="nav-logo-icon" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"
+                         fill="currentColor" stroke="none"/>
+            </svg>
+            <span class="nav-logo-nome">TRADUZ</span>
+        </a>
         <div class="nav-links">
             {% if request.session.get('student_id') %}
                 {% if request.session.get('is_admin') %}

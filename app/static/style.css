@@ -137,14 +137,23 @@ body > nav {
   gap: 0.4rem;
   white-space: nowrap;
 }
-.nav-logo:hover { text-decoration: none; opacity: 0.9; }
+.nav-logo:hover { text-decoration: none; opacity: 0.95; }
 
-.nav-logo .emoji {
-  display: inline-block;
-  transition: transform 0.3s var(--easing);
+/* Ícone de bússola da marca TRADUZ (SVG inline em base.html). O ponteiro
+   gira devagar no hover — remete à ideia de "orientação" sem virar emoji. */
+.nav-logo-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: #ffffff;
+  transition: transform 0.5s var(--easing);
 }
-.nav-logo:hover .emoji {
-  transform: rotate(-12deg) scale(1.15);
+.nav-logo:hover .nav-logo-icon {
+  transform: rotate(-24deg);
+}
+.nav-logo-nome {
+  letter-spacing: 0.08em;
+  font-weight: 800;
 }
 
 .nav-links {
