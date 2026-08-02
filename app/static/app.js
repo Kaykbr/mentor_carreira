@@ -40,6 +40,7 @@ document.addEventListener("alpine:init", () => {
         perigo: false,
         confirmLabel: "Confirmar",
         _onConfirm: null,
+        _loadingMsg: "",
         open(detail) {
             this.message = detail.message || "Confirmar?";
             this.action = detail.action || "";
@@ -47,16 +48,26 @@ document.addEventListener("alpine:init", () => {
             this.perigo = !!detail.perigo;
             this.confirmLabel = detail.confirmLabel || "Confirmar";
             this._onConfirm = typeof detail.onConfirm === "function" ? detail.onConfirm : null;
+            // Opcional: mensagem para o overlay de loading global que aparece
+            // durante uma acao lenta (ex.: geracao de perfil pela IA).
+            this._loadingMsg = detail.loadingMsg || "";
             this.visible = true;
         },
         close() {
             this.visible = false;
             this._onConfirm = null;
+            this._loadingMsg = "";
         },
         confirm() {
             if (this._onConfirm) {
                 this._onConfirm();
             } else if (this.action) {
+                // Overlay antes do submit — se o servidor demorar (ex.: gerar perfil),
+                // o aluno ve o cartao branco central com spinner e mensagem, em vez
+                // de olhar a tela travada sem feedback.
+                if (this._loadingMsg && typeof window.mostrarOverlayLoading === "function") {
+                    window.mostrarOverlayLoading(this._loadingMsg);
+                }
                 const f = document.createElement("form");
                 f.method = this.method === "GET" ? "GET" : "POST";
                 f.action = this.action;
@@ -65,10 +76,33 @@ document.addEventListener("alpine:init", () => {
             }
             this.visible = false;
             this._onConfirm = null;
+            this._loadingMsg = "";
         },
     }));
 
 });
+
+/* Overlay de loading em tela cheia — exportado no `window` para o Alpine
+   `confirmModal` conseguir chamar antes de submeter forms dinamicos (ex.:
+   "Finalizar triagem" -> gera perfil). Declarado no top-level para que a
+   funcao esteja disponivel imediatamente apos o parse do script, sem
+   depender do evento DOMContentLoaded ter disparado. */
+function mostrarOverlayLoading(mensagem) {
+    if (document.getElementById("loading-overlay")) return;
+    const overlay = document.createElement("div");
+    overlay.id = "loading-overlay";
+    overlay.className = "loading-overlay";
+    overlay.setAttribute("role", "status");
+    overlay.setAttribute("aria-live", "polite");
+    overlay.innerHTML = `
+        <div class="loading-caixa">
+            <div class="loading-spinner" aria-hidden="true"></div>
+            <p class="loading-mensagem">${mensagem}</p>
+            <p class="loading-dica">Pode levar até 1 minuto. Não feche esta página.</p>
+        </div>`;
+    document.body.appendChild(overlay);
+}
+window.mostrarOverlayLoading = mostrarOverlayLoading;
 
 /* ---- Comportamentos DOM-ready ------------------------------------------ */
 document.addEventListener("DOMContentLoaded", () => {
@@ -76,22 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
           cheia com uma "caixinha" explicando o que está acontecendo. Isso deixa
           claro para o aluno que gerações (perfil/PDI/currículo/análise de vaga)
           estão em curso, mesmo que demorem 30-60s. */
-    function mostrarOverlayLoading(mensagem) {
-        if (document.getElementById("loading-overlay")) return;
-        const overlay = document.createElement("div");
-        overlay.id = "loading-overlay";
-        overlay.className = "loading-overlay";
-        overlay.setAttribute("role", "status");
-        overlay.setAttribute("aria-live", "polite");
-        overlay.innerHTML = `
-            <div class="loading-caixa">
-                <div class="loading-spinner" aria-hidden="true"></div>
-                <p class="loading-mensagem">${mensagem}</p>
-                <p class="loading-dica">Pode levar até 1 minuto. Não feche esta página.</p>
-            </div>`;
-        document.body.appendChild(overlay);
-    }
-
     document.querySelectorAll("form[data-loading]").forEach((form) => {
         form.addEventListener("submit", () => {
             const botao = form.querySelector('button[type="submit"], button:not([type])');

@@ -198,16 +198,18 @@
     {% endif %}
     {% endif %}
 
-    {# Recursos de estudo (RAG) #}
+    {# Recursos de estudo (indicacoes, sem link — os links do corpus estao defasados) #}
     {% if analise.recursos_lacunas %}
     <div class="cartao nao-imprimir">
-        <div class="secao-icone"><span>📚</span><h3>Recursos para fechar as lacunas</h3></div>
-        <p class="texto-muted" style="margin:.15rem 0 .75rem">Materiais selecionados para desenvolver as competências que faltam.</p>
+        <div class="secao-icone"><span>📚</span><h3>Sugestões de estudo para as lacunas</h3></div>
+        <p class="texto-muted" style="margin:.15rem 0 .75rem">
+            Ideias de materiais para desenvolver as competências que faltam. Busque no Google,
+            YouTube ou plataformas como Alura, Coursera e Udemy pelos termos abaixo.
+        </p>
         <ul style="margin:0;">
             {% for r in analise.recursos_lacunas %}
             <li style="margin-bottom:.5rem;">
-                <strong>{{ r.competencia }}:</strong>
-                <a href="{{ r.url }}" target="_blank" rel="noopener">{{ r.titulo }}</a>
+                <strong>{{ r.competencia }}:</strong> {{ r.titulo }}
                 {% if r.tipo %}<span class="badge badge-tipo" style="margin-left:.4rem;">{{ r.tipo }}</span>{% endif %}
             </li>
             {% endfor %}
