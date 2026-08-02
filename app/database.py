@@ -32,14 +32,13 @@ _e_sqlite = _url_banco.startswith("sqlite")
 # `check_same_thread=False` é exclusivo do SQLite — passá-lo ao psycopg quebra a conexão.
 _connect_args = {"check_same_thread": False} if _e_sqlite else {}
 
-# Pool para 1 worker uvicorn (ver Dockerfile). O Render Postgres Free limita a ~97
-# conexões — nosso pool total (size + overflow = 13) cabe folgado.
-# `pool_pre_ping` descarta conexões mortas antes de usar: o Postgres gerenciado
-# encerra conexões ociosas, e sem isso a primeira query após um período parado falharia.
+# Pool dimensionado para uso concorrente (~50 alunos simultâneos em 2 workers uvicorn).
+# `pool_pre_ping` descarta conexões mortas antes de usar: o Postgres gerenciado encerra
+# conexões ociosas, e sem isso a primeira query após um período parado falharia.
 _pool_kwargs: dict = (
     {}
     if _e_sqlite
-    else {"pool_size": 8, "max_overflow": 5, "pool_timeout": 30, "pool_recycle": 300}
+    else {"pool_size": 10, "max_overflow": 5, "pool_timeout": 30, "pool_recycle": 300}
 )
 
 engine = create_engine(
