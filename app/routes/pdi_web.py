@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Student
 from app.routes._deps import verificar_proprio_aluno_html
+from app.rate_limit import LIMITE_GERACAO, limiter
 from app.routes._web import flash, linhas, primeiro_erro, templates
 from app.schemas import PDIUpdate, QuadroUpdate
 from app.services import pdi_service, profile_service
@@ -37,6 +38,7 @@ def pagina_pdi(
 
 
 @router.post("/alunos/{student_id}/pdi/gerar")
+@limiter.limit(LIMITE_GERACAO)
 def gerar_pdi_web(
     request: Request,
     student_id: int,

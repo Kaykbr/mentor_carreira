@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Student
 from app.routes._deps import verificar_proprio_aluno_html
+from app.rate_limit import LIMITE_GERACAO, limiter
 from app.routes._web import flash, templates
 from app.schemas import CurriculoUpdate
 from app.services import (
@@ -65,6 +66,7 @@ def pagina_curriculo(
 
 
 @router.post("/alunos/{student_id}/curriculo/gerar")
+@limiter.limit(LIMITE_GERACAO)
 def gerar_curriculo_web(
     request: Request,
     student_id: int,
@@ -81,6 +83,7 @@ def gerar_curriculo_web(
 
 
 @router.post("/alunos/{student_id}/curriculo/analisar")
+@limiter.limit(LIMITE_GERACAO)
 def analisar_curriculo_web(
     request: Request,
     student_id: int,

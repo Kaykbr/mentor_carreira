@@ -43,3 +43,50 @@ document.addEventListener("htmx:afterRequest", (evt) => {
         campo.dispatchEvent(new Event("input"));
     }
 });
+
+// HTMX ignora respostas 4xx/5xx por padrão (não faz swap). Sem tratamento, o aluno
+// perde a mensagem digitada e nada aparece na tela — parece que o site quebrou.
+// Aqui interceptamos o erro e injetamos uma bolha vermelha no chat com a explicação.
+function _mensagemDeErro(status) {
+    if (status === 429) {
+        return "Você enviou muitas mensagens em pouco tempo. Aguarde alguns minutos e tente novamente.";
+    }
+    if (status === 503) {
+        return "O mentor (IA) está indisponível no momento. Tente novamente em instantes.";
+    }
+    if (status === 502 || status === 504) {
+        return "A resposta demorou demais. Verifique sua conexão e tente enviar novamente.";
+    }
+    return "Não foi possível enviar sua mensagem agora. Tente novamente em alguns segundos.";
+}
+
+document.addEventListener("htmx:responseError", (evt) => {
+    if (!evt.detail.elt || evt.detail.elt.id !== "form-mensagem") return;
+    const chat = document.getElementById("chat");
+    if (!chat) return;
+    const status = evt.detail.xhr ? evt.detail.xhr.status : 0;
+    const bolha = document.createElement("div");
+    bolha.className = "mensagem mensagem-erro mensagem-nova";
+    bolha.setAttribute("role", "alert");
+    // textContent evita XSS caso a mensagem venha do backend futuramente.
+    const span = document.createElement("span");
+    span.textContent = "⚠️ " + _mensagemDeErro(status);
+    bolha.appendChild(span);
+    chat.appendChild(bolha);
+    chat.scrollTop = chat.scrollHeight;
+});
+
+// Erro de rede/timeout no cliente (sem resposta HTTP) — mesma UX.
+document.addEventListener("htmx:sendError", (evt) => {
+    if (!evt.detail.elt || evt.detail.elt.id !== "form-mensagem") return;
+    const chat = document.getElementById("chat");
+    if (!chat) return;
+    const bolha = document.createElement("div");
+    bolha.className = "mensagem mensagem-erro mensagem-nova";
+    bolha.setAttribute("role", "alert");
+    const span = document.createElement("span");
+    span.textContent = "⚠️ Sem conexão com o servidor. Verifique sua internet e tente novamente.";
+    bolha.appendChild(span);
+    chat.appendChild(bolha);
+    chat.scrollTop = chat.scrollHeight;
+});

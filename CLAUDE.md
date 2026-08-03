@@ -12,6 +12,52 @@ precisa entender ou modificar o projeto.
 
 ---
 
+## 🚨 Operação durante a coleta (2-3 dias no Render)
+
+### Backup diário do Postgres — **rodar 1× por dia**
+
+O plano Free do Postgres do Render expira em ~30 dias. **Se o serviço for excluído sem
+backup, os dados da pesquisa somem.** Roda um dump por dia no PowerShell (local):
+
+```powershell
+# Pega a External Database URL no Render → mentor-db → Connect → External Database URL
+$env:DATABASE_URL_EXT = "postgresql://USER:PASS@dpg-XXXX.oregon-postgres.render.com/mentor_db"
+
+# Rodar 1x por dia durante a coleta:
+pg_dump $env:DATABASE_URL_EXT > backups/mentor-$(Get-Date -Format 'yyyy-MM-dd').sql
+```
+
+Precisa do `pg_dump` instalado (vem com o PostgreSQL client). Não requer instalar o servidor.
+O arquivo `.sql` fica pequeno (< 5 MB para 50 alunos) — dá para versionar num drive privado.
+
+**Ao fim da coleta**, antes de excluir os serviços: um dump final + exportar CSVs das tabelas
+críticas (`students`, `student_profiles`, `pdis`, `curriculum_vagas`) para o TCC.
+
+### Playbook se o Metrics do Render apontar memória alta (>85% recorrente)
+
+O plano Starter tem 512 MB. Aguenta ~15 gerações simultâneas com 2 workers. Se o pico for
+maior (turma inteira clicando "Gerar PDI" ao mesmo tempo), o kernel mata o processo (OOM
+kill) e o Render reinicia sozinho (~1 min de downtime, sem perda de dados).
+
+**Solução instantânea (1 clique, sem code push):**
+Render → Web Service `mentor-carreira` → **Settings → Instance Type → Standard ($25/mês)
+→ Save**. Cobra proporcional (~US$ 0,83/dia). Ao fim do pico, volte para Starter.
+
+Não mexer no `--workers 2` do Dockerfile: dois workers permanecem para ter margem de CPU
+paralelo; o gargalo real é RAM, resolvido por instance type maior.
+
+### Se o rate limit bloquear alunos (HTTP 429)
+
+Diferente do primeiro deploy, o limite agora é **por sessão** (não por IP) nas rotas
+autenticadas (triagem, geração) — turma no mesmo NAT do IFCE não trava mais.
+Se ainda assim algum aluno bater no limite (uso atípico), há duas saídas:
+
+1. **Aluno individual travado**: pedir para esperar ~10 min. `slowapi` usa janela deslizante.
+2. **Turma inteira travada num pico**: `RATE_LIMIT_ATIVO=false` no Environment do Render → Save.
+   Restart em ~30 s. O `INVITE_CODE` continua protegendo contra estranhos.
+
+---
+
 ## Visão geral
 
 ```

@@ -68,8 +68,11 @@ def _cliente() -> anthropic.Anthropic:
     if _cliente_cache is None:
         _cliente_cache = anthropic.Anthropic(
             api_key=get_settings().anthropic_api_key,
-            # Falha rápido em vez de prender o worker (default do SDK: 10 minutos).
-            timeout=60.0,
+            # 45s: cabe folgado dentro do teto de ~100s do proxy do Render mesmo
+            # somando 1 retry (45 + 1 + 45 = ~91s). Antes eram 60s x 3 tentativas
+            # = ate ~183s, causando 502 + risco de o backend salvar e o aluno
+            # reenviar (duplicacao silenciosa).
+            timeout=45.0,
             # Retentativas ficam a cargo do tenacity (_RETRY) — evita retry duplicado.
             max_retries=0,
             # Habilita prompt caching (obrigatório para Haiku; Sonnet/Opus mais novos
@@ -82,15 +85,18 @@ def _cliente() -> anthropic.Anthropic:
 # ---------------------------------------------------------------------------
 # Decorator de retry para chamadas à API
 #
-# Aplica até 3 tentativas com backoff exponencial (1s → 2s → 4s, máx 10s)
-# apenas para erros transitórios: rate limit (429), falha/timeout de conexão e
-# erros 5xx do servidor (inclui 529 "overloaded"). Erros permanentes (chave
-# inválida, resposta malformada) propagam imediatamente sem retry.
-# O cliente usa max_retries=0, então esta é a única camada de retentativas.
+# Aplica ate 2 tentativas com backoff exponencial (1s -> 2s, max 10s) apenas
+# para erros transitorios: rate limit (429), falha/timeout de conexao e erros
+# 5xx do servidor (inclui 529 "overloaded"). Erros permanentes (chave invalida,
+# resposta malformada) propagam imediatamente sem retry.
+# O cliente usa max_retries=0, entao esta e a unica camada de retentativas.
+# Reduzido de 3 para 2 tentativas: com timeout=45s, cabe dentro do teto de
+# ~100s do proxy do Render (45 + 1 + 45 = ~91s). Se falhar mesmo assim, o
+# handler de anthropic.APIError devolve 503 amigavel e o aluno tenta de novo.
 # ---------------------------------------------------------------------------
 
 _RETRY = retry(
-    stop=stop_after_attempt(3),
+    stop=stop_after_attempt(2),
     wait=wait_exponential(multiplier=1, min=1, max=10),
     retry=retry_if_exception_type(
         (anthropic.RateLimitError, anthropic.APIConnectionError, anthropic.InternalServerError)

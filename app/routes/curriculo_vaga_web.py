@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Student
 from app.routes._deps import verificar_proprio_aluno_html
+from app.rate_limit import LIMITE_GERACAO, limiter
 from app.routes._web import flash, primeiro_erro, templates
 from app.schemas import AnaliseVagaInput, CurriculoUpdate
 from app.services import curriculum_vaga_service, profile_service
@@ -41,6 +42,7 @@ def pagina_nova_vaga(
 
 
 @router.post("/alunos/{student_id}/curriculo/vagas", response_class=HTMLResponse)
+@limiter.limit(LIMITE_GERACAO)
 def criar_curriculo_vaga(
     request: Request,
     student_id: int,

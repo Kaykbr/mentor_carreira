@@ -43,7 +43,14 @@ class Settings(BaseSettings):
             '(ex.: python -c "import secrets; print(secrets.token_hex(32))")'
         ),
     )
-    session_max_age: int = Field(default=60 * 60 * 8, description="Duração da sessão em segundos (padrão: 8h)")
+    session_max_age: int = Field(
+        default=60 * 60 * 72,
+        description=(
+            "Duração da sessão em segundos (padrão: 72h = 3 dias). Cobre uma janela de "
+            "coleta assíncrona inteira: aluno que loga no 1º dia continua logado no 3º "
+            "sem precisar autenticar de novo (evita a impressão de que perdeu dados)."
+        ),
+    )
     session_https_only: bool = Field(
         default=False,
         description=(

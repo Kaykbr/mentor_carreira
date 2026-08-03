@@ -14,7 +14,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.models import Student
 from app.routes._deps import eh_admin, verificar_proprio_aluno_html
-from app.rate_limit import LIMITE_CADASTRO, LIMITE_LOGIN, LIMITE_TRIAGEM, limiter
+from app.rate_limit import LIMITE_CADASTRO, LIMITE_GERACAO, LIMITE_LOGIN, LIMITE_TRIAGEM, limiter
 from app.routes._web import flash, templates
 from app.services import auth_service, curriculum_service, pdi_service, profile_service, student_service
 
@@ -346,6 +346,7 @@ def enviar_mensagem_htmx(
 
 
 @router.post("/alunos/{student_id}/triagem/finalizar")
+@limiter.limit(LIMITE_GERACAO)
 def finalizar_triagem_web(
     request: Request,
     student_id: int,
